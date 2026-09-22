@@ -7,7 +7,8 @@
         \/  \__, |_| |_|_/_/\_\\__,_| |___/ |______|_| |_|\__|_|\__|\__, | |_____/| .__/ \__,_| \_/\_/ |_| |_|\___|_|        \/   |____|
              __/ |                                                   __/ |        | |                                                   
             |___/                                                   |___/         |_|
-]]--
+]]-
+-- ok
 
 if getgenv().SmilerSpawner then return getgenv().SmilerSpawner end
 
@@ -1073,57 +1074,75 @@ Module.Run = function(self, entity: any, copyEntity: boolean)
     task.spawn(function()
         local reboundType = config.Rebounding.Type:upper()
         if reboundType == "AMBUSH" then
-            local pathfindNodes = GetPathfindNodesAmbush(config)
-            for _, v in next, pathfindNodes do
-                local cframe = v.CFrame + Vector3.new(0, 3 + config.Entity.HeightOffset, 0)
-                EntityMoveTo(model, cframe, config.Movement.Speed)
-                task.spawn(entity.RunCallback, entity, "OnReachNode", v)
-            end
-            
-            -- Rebounding handling
-if config.Rebounding.Enabled then
-	local reboundsCount = math.random(config.Rebounding.Min, config.Rebounding.Max)
+	local pathfindNodes = GetPathfindNodesAmbush(config)
 
-	for i = 1, reboundsCount do
-		-- Entity đang ở cuối path
-		task.wait(config.Movement.EndDelay)
+	-- Đi tới node cuối lần đầu
+	for _, v in next, pathfindNodes do
+		local cframe = v.CFrame + Vector3.new(0, 3 + config.Entity.HeightOffset, 0)
 
-		model:SetAttribute("Damage", true)
-		task.spawn(entity.RunCallback, entity, "OnRebounding", true)
+		EntityMoveTo(model, cframe, config.Movement.Speed)
+		task.spawn(entity.RunCallback, entity, "OnReachedNode", v)
+	end
 
-		-- Run backwards through nodes
-		for i = #pathfindNodes, 1, -1 do
-			local v = pathfindNodes[i]
-			local cframe = v.CFrame + Vector3.new(0, 3 + config.Entity.HeightOffset, 0)
+	-- Rebounding
+	if config.Rebounding.Enabled then
+		local reboundsCount = math.random(
+			config.Rebounding.Min,
+			config.Rebounding.Max
+		)
 
-			EntityMoveTo(model, cframe, config.Movement.Speed)
-			task.spawn(entity.RunCallback, entity, "OnReachNode", v)
-		end
+		for reboundIndex = 1, reboundsCount do
 
-		-- Entity đã quay về điểm spawn
-		task.wait(config.Movement.SpawnPlaceDelay)
-
-		task.spawn(entity.RunCallback, entity, "OnRebounding", false)
-
-		-- Nếu vẫn còn rebound tiếp thì chuẩn bị đi về phía cuối
-		if i < reboundsCount then
-			task.wait(config.Rebounding.Delay)
+			-- Đã tới node cuối -> chờ EndDelay
+			task.wait(config.Movement.EndDelay)
 
 			model:SetAttribute("Damage", true)
 			task.spawn(entity.RunCallback, entity, "OnRebounding", true)
 
-			pathfindNodes = GetPathfindNodesAmbush(config)
-
-			-- Run forwards through nodes
-			for _, v in next, pathfindNodes do
-				local cframe = v.CFrame + Vector3.new(0, 3 + config.Entity.HeightOffset, 0)
+			-- Đi ngược về điểm spawn
+			for nodeIndex = #pathfindNodes, 1, -1 do
+				local v = pathfindNodes[nodeIndex]
+				local cframe = v.CFrame + Vector3.new(
+					0,
+					3 + config.Entity.HeightOffset,
+					0
+				)
 
 				EntityMoveTo(model, cframe, config.Movement.Speed)
-				task.spawn(entity.RunCallback, entity, "OnReachNode", v)
+				task.spawn(entity.RunCallback, entity, "OnReachedNode", v)
+			end
+
+			-- Đã quay về điểm spawn -> chờ SpawnPlaceDelay
+			task.wait(config.Movement.SpawnPlaceDelay)
+
+			task.spawn(entity.RunCallback, entity, "OnRebounding", false)
+
+			-- Nếu còn rebound tiếp
+			if reboundIndex < reboundsCount then
+
+				-- Delay giữa 2 lần rebound
+				task.wait(config.Rebounding.Delay)
+
+				-- Cập nhật path vì CurrentRooms có thể đã thay đổi
+				pathfindNodes = GetPathfindNodesAmbush(config)
+
+				model:SetAttribute("Damage", true)
+				task.spawn(entity.RunCallback, entity, "OnRebounding", true)
+
+				-- Đi tiếp tới node cuối
+				for _, v in next, pathfindNodes do
+					local cframe = v.CFrame + Vector3.new(
+						0,
+						3 + config.Entity.HeightOffset,
+						0
+					)
+
+					EntityMoveTo(model, cframe, config.Movement.Speed)
+					task.spawn(entity.RunCallback, entity, "OnReachedNode", v)
+				end
 			end
 		end
 	end
-end
         elseif reboundType == "BLITZ" then
             local nodesToCurrent, _ = GetPathfindNodesBlitz(config)
 	
