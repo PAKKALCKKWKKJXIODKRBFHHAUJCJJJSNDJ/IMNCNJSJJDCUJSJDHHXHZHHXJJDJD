@@ -1,0 +1,94 @@
+-- CRUCIFIX NORMAL SPAWN
+coroutine.wrap(function()
+    game.ReplicatedStorage.GameData.LatestRoom.Changed:Connect(function()
+        function spawncruxy(p62)
+            local v63 = game:GetObjects("rbxassetid://11631916882")[1]
+            local vu64 = v63.Handle:Clone()
+            v63:Destroy()
+            vu64.Parent = game.Workspace
+            vu64.Name = "Cruxy"
+            vu64.Position = p62
+            vu64.Anchored = true
+            local v65 = math.random(- 90, 90)
+            vu64.CFrame = CFrame.lookAt(vu64.Position, vu64.Position - Vector3.new(v65, yy, zy))
+            vu64.Rotation = Vector3.new(0, v65, - 90)
+            local v66 = Instance.new("PointLight")
+            v66.Brightness = 10000
+            v66.Parent = vu64
+            v66.Enabled = true
+            v66.Color = Color3.fromRGB(255, 0, 0)
+            v66.Range = 1
+            local v67 = Instance.new("PointLight")
+            v67.Brightness = 3
+            v67.Parent = vu64
+            v67.Enabled = true
+            v67.Color = Color3.fromRGB(0, 255, 255)
+            v67.Range = 10
+            local v68 = Instance.new("ProximityPrompt")
+            v68.Name = "prompty"
+            v68.MaxActivationDistance = 5
+            v68.ObjectText = "Custom"
+            v68.RequiresLineOfSight = true
+            v68.Parent = vu64
+            v68.Style = "Custom"
+            v68.Triggered:Connect(function()
+                vu64:Destroy()
+                local vu69 = game:GetObjects("rbxassetid://11631916882")[1]
+                vu69.Parent = game.Players.LocalPlayer.Backpack
+                local v70 = game:GetService("Players").LocalPlayer
+                local v71 = v70.Character or v70.CharacterAdded:Wait()
+                local vu72 = v71:WaitForChild("Humanoid")
+                local vu73 = v71:WaitForChild("RightUpperArm")
+                local vu74 = v71:WaitForChild("LeftUpperArm")
+                local vu75 = vu73.RightShoulder.C1
+                local vu76 = vu74.LeftShoulder.C1
+                local function vu81(_)
+                    vu73.Name = "R_Arm"
+                    vu74.Name = "L_Arm"
+                    vu73.RightShoulder.C1 = vu75 * CFrame.Angles(math.rad(- 90), math.rad(- 15), 0)
+                    vu74.LeftShoulder.C1 = vu76 * CFrame.new(- 0.2, - 0.3, - 0.5) * CFrame.Angles(math.rad(- 125), math.rad(25), math.rad(25))
+                    local v77 = next
+                    local v78, v79 = vu72:GetPlayingAnimationTracks()
+                    while true do
+                        local v80
+                        v79, v80 = v77(v78, v79)
+                        if v79 == nil then
+                            break
+                        end
+                        v80:Stop()
+                    end
+                end
+                vu69.Equipped:Connect(function()
+                    vu81(vu69)
+                    game.Players.LocalPlayer:SetAttribute("Hidden", true)
+                end)
+                vu69.Unequipped:Connect(function()
+                    game.Players.LocalPlayer:SetAttribute("Hidden", false)
+                    vu73.Name = "RightUpperArm"
+                    vu74.Name = "LeftUpperArm"
+                    vu73.RightShoulder.C1 = vu75
+                    vu74.LeftShoulder.C1 = vu76
+                end)
+require(game.Players.LocalPlayer.PlayerGui.MainUI.Initiator.Main_Game).caption("You grab the crucifix.", true)
+wait(3)
+require(game.Players.LocalPlayer.PlayerGui.MainUI.Initiator.Main_Game).caption("It has a text on the back: \"Made in China\"", true)
+ wait(3)
+require(game.Players.LocalPlayer.PlayerGui.MainUI.Initiator.Main_Game).caption("It only works with custom entities.", true)
+            end)
+        end
+        local v82 = game:GetService("ReplicatedStorage").GameData.LatestRoom.Value
+        local v83 = next
+        local v84, v85 = game.Workspace.CurrentRooms[v82].Assets:GetDescendants()
+        while true do
+            local v86
+            v85, v86 = v83(v84, v85)
+            if v85 == nil then
+                break
+            end
+            if v86.Name == "Table" and math.random(1, 80) == 1 then
+                local v87 = v86.Main.Position + Vector3.new(0, 1.8, 0)
+                spawncruxy(v87)
+            end
+        end
+    end)
+end)()
