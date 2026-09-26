@@ -1,1392 +1,645 @@
-local Players = game:GetService("Players")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local RunService = game:GetService("RunService")
-local TweenService = game:GetService("TweenService")
-local CoreGui = game:GetService("CoreGui")
-
-local LPlayer = Players.LocalPlayer
-local Char = LPlayer.Character or LPlayer.CharacterAdded:Wait()
-local Hum = Char:WaitForChild("Humanoid")
-local Camera = workspace.CurrentCamera
-
-local SpeedMultiplier = 60 / 100
-
-local DefaultConfig = loadstring(game:HttpGet(
-	"https://raw.githubusercontent.com/lelele78/ProtectSecurity.18/refs/heads/main/DefautConfig"
-))()
-
-local Functions = loadstring(game:HttpGet(
-	"https://raw.githubusercontent.com/RegularVynixu/Utilities/main/Functions.lua"
-))()
-
-local ModuleEvents = require(ReplicatedStorage.ModulesClient.Module_Events)
-local MainGame = require(LPlayer.PlayerGui.MainUI.Initiator.Main_Game)
-
-local EntityConnections = {}
-local EntityModule = {}
-
---------------------------------------------------
---// Character
---------------------------------------------------
-
-LPlayer.CharacterAdded:Connect(function(NewChar)
-	Char = NewChar
-	Hum = Char:WaitForChild("Humanoid")
-end)
-
-local function GetPlayerRoot()
-	if not Char or not Char.Parent then
-		return nil
-	end
-
-	return Char:FindFirstChild("HumanoidRootPart")
-		or Char:FindFirstChild("Head")
+local v1 = game:GetService("Players")
+local vu2 = game:GetService("ReplicatedStorage")
+local vu3 = game:GetService("RunService")
+local vu4 = game:GetService("TweenService")
+local vu5 = game:GetService("CoreGui")
+local vu6 = v1.LocalPlayer
+local vu7 = vu6.Character or vu6.CharacterAdded:Wait()
+local v8 = vu7
+local vu9 = vu7.WaitForChild(v8, "Humanoid")
+local vu10 = workspace.CurrentCamera
+local vu11 = 60
+local vu12 = workspace.FindPartOnRayWithIgnoreList
+local vu13 = vu10.WorldToViewportPoint
+local vu14 = {
+    DefaultConfig = loadstring(game:HttpGet("https://raw.githubusercontent.com/lelele78/ProtectSecurity.18/refs/heads/main/DefautConfig"))(),
+       Functions = loadstring(game:HttpGet("https://raw.githubusercontent.com/RegularVynixu/Utilities/main/Functions.lua"))()
+}
+local vu15 = {
+    ModuleEvents = require(vu2.ModulesClient.Module_Events),
+    MainGame = require(vu6.PlayerGui.MainUI.Initiator.Main_Game)
+}
+local vu166 = {}
+local vu170 = {}
+function getPlayerRoot()
+    return vu7:FindFirstChild("HumanoidRootPart") or vu7:FindFirstChild("Head")
 end
-
---------------------------------------------------
---// Model loader
---------------------------------------------------
-
-local function LoadModel(ModelId)
-	if typeof(ModelId) == "Instance" then
-		if ModelId:IsA("Model") then
-			return ModelId
-		end
-
-		return nil
-	end
-
-	if typeof(ModelId) ~= "string" then
-		return nil
-	end
-
-	local Success, Result = pcall(function()
-		return game:GetObjects(ModelId)
-	end)
-
-	if not Success or not Result then
-		warn("Smiler: failed to load model:", Result)
-		return nil
-	end
-
-	for _, Obj in ipairs(Result) do
-		if Obj:IsA("Model") then
-			return Obj
-		end
-	end
-
-	return nil
-end
-
---------------------------------------------------
---// Movement
---------------------------------------------------
-
-local function DragEntity(Entity, TargetPosition, Speed)
-	local Data = EntityConnections[Entity]
-
-	if not Data then
-		return
-	end
-
-	if Data.movementNode then
-		Data.movementNode:Disconnect()
-		Data.movementNode = nil
-	end
-
-	if not Entity.Parent or not Entity.PrimaryPart then
-		return
-	end
-
-	local Finished = false
-
-	Data.movementNode = RunService.Stepped:Connect(function(_, Delta)
-		if not Entity.Parent
-			or Entity:GetAttribute("NoAI")
-			or not Entity.PrimaryPart then
-
-			Finished = true
-
-			if Data.movementNode then
-				Data.movementNode:Disconnect()
-				Data.movementNode = nil
-			end
-
-			return
-		end
-
-		local CurrentPosition = Entity.PrimaryPart.Position
-		local Difference = TargetPosition - CurrentPosition
-
-		if Difference.Magnitude <= 0.1 then
-			Finished = true
-
-			if Data.movementNode then
-				Data.movementNode:Disconnect()
-				Data.movementNode = nil
-			end
-
-			return
-		end
-
-		local Step = math.min(Delta * Speed, Difference.Magnitude)
-
-		Entity:SetPrimaryPartCFrame(
-			CFrame.new(CurrentPosition + Difference.Unit * Step)
-		)
-	end)
-
-	repeat
-		task.wait()
-	until Finished
-		or not Entity.Parent
-		or not Data.movementNode
-end
-
---------------------------------------------------
---// Sound
---------------------------------------------------
-
-local function LoadSound(Config)
-	if not Config then
-		return nil
-	end
-
-	local Sound = Instance.new("Sound")
-
-	local SoundId = tostring(Config[1])
-	local Properties = Config[2] or {}
-
-	for Property, Value in pairs(Properties) do
-		if Property ~= "SoundId" and Property ~= "Parent" then
-			pcall(function()
-				Sound[Property] = Value
-			end)
-		end
-	end
-
-	if SoundId:find("rbxasset://") then
-		Sound.SoundId = SoundId
-	else
-		Sound.SoundId = "rbxassetid://" .. SoundId:gsub("%D", "")
-	end
-
-	Sound.Parent = workspace
-
-	return Sound
-end
-
---------------------------------------------------
---// Entity creation
---------------------------------------------------
-
-function EntityModule.createEntity(Config)
-	for Name, Value in pairs(DefaultConfig) do
-		if Config[Name] == nil then
-			Config[Name] = Value
-		end
-	end
-
-	Config.Speed = SpeedMultiplier * Config.Speed
-
-	-- Load model directly from Roblox asset ID
-	local Model = LoadModel(Config.Model)
-
-	if not Model then
-		warn("Smiler: unable to load entity model:", Config.Model)
-		return nil
-	end
-
-	Model.PrimaryPart =
-		Model.PrimaryPart
-		or Model:FindFirstChildWhichIsA("BasePart", true)
-
-	if not Model.PrimaryPart then
-		warn("Smiler: entity model has no BasePart:", Config.CustomName)
-		Model:Destroy()
-		return nil
-	end
-
-	Model.PrimaryPart.Anchored = true
-
-	if Config.CustomName then
-		Model.Name = Config.CustomName
-	end
-
-	Model:SetAttribute("IsCustomEntity", true)
-	Model:SetAttribute("NoAI", false)
-
-	return {
-		Model = Model,
-		Config = Config,
-
-		Debug = {
-			OnEntitySpawned = function()
-			end,
-
-			OnEntityDespawned = function()
-			end,
-
-			OnEntityStartMoving = function()
-			end,
-
-			OnEntityFinishedRebound = function()
-			end,
-
-			OnEntityEnteredRoom = function()
-			end,
-
-			OnLookAtEntity = function()
-			end,
-
-			OnDeath = function()
-			end
-		}
-	}
-end
-
---------------------------------------------------
---// Crucifix sound
---------------------------------------------------
-
-local function GitAud(SoundUrl, FileName)
-	FileName = tostring(FileName)
-
-	local File = FileName .. ".mp3"
-
-	if not isfile(File) then
-		local Success, Data = pcall(function()
-			return game:HttpGet(SoundUrl)
-		end)
-
-		if not Success then
-			warn("Smiler: failed to download sound:", Data)
-			return nil
-		end
-
-		writefile(File, Data)
-	end
-
-	local AssetFunction = getcustomasset or getsynasset
-
-	if not AssetFunction then
-		return nil
-	end
-
-	local Success, Asset = pcall(function()
-		return AssetFunction(File)
-	end)
-
-	if not Success then
-		warn("Smiler: failed to load sound asset:", Asset)
-		return nil
-	end
-
-	return Asset
-end
-
-local function CustomGitSound(SoundUrl, Volume, FileName)
-	local SoundId = GitAud(SoundUrl, FileName)
-
-	if not SoundId then
-		return
-	end
-
-	local Sound = Instance.new("Sound")
-	Sound.SoundId = SoundId
-	Sound.Volume = Volume or 1
-	Sound.Looped = false
-	Sound.Parent = workspace
-	Sound:Play()
-
-	Sound.Ended:Connect(function()
-		Sound:Destroy()
-	end)
-
-	return Sound
-end
-
---------------------------------------------------
---// Run entity
---------------------------------------------------
-
-function EntityModule.runEntity(Entity)
-    if not Entity or not Entity.Model then
-        warn("Smiler: Entity is invalid")
-        return
+function dragEntity(pu18, pu19, pu20)
+    local vu21 = vu166[pu18]
+    if vu21.movementNode then
+        vu21.movementNode:Disconnect()
     end
-
-    local CurrentRooms = workspace:FindFirstChild("CurrentRooms")
-    if not CurrentRooms then
-        warn("Smiler: workspace.CurrentRooms not found")
-        return
-    end
-
-    local Nodes = {}
-
-    local function AddPart(Part)
-        if Part and Part:IsA("BasePart") then
-            table.insert(Nodes, Part)
-        end
-    end
-
-    local function GetNumber(Name)
-        return tonumber(Name)
-    end
-
-    local Rooms = CurrentRooms:GetChildren()
-
-    table.sort(Rooms, function(A, B)
-        local ANumber = GetNumber(A.Name)
-        local BNumber = GetNumber(B.Name)
-
-        if ANumber and BNumber then
-            return ANumber < BNumber
-        elseif ANumber then
-            return true
-        elseif BNumber then
-            return false
-        end
-
-        return A.Name < B.Name
-    end)
-
-    for _, Room in ipairs(Rooms) do
-        if Room:IsA("Model") then
-
-            local Entrance = Room:FindFirstChild("RoomEntrance")
-            AddPart(Entrance)
-
-            local NodeFolder =
-                Room:FindFirstChild("PathfindNodes")
-                or Room:FindFirstChild("Nodes")
-
-            if NodeFolder then
-                local RoomNodes = {}
-
-                for _, Node in ipairs(NodeFolder:GetChildren()) do
-                    if Node:IsA("BasePart") then
-                        table.insert(RoomNodes, Node)
-                    end
-                end
-
-                table.sort(RoomNodes, function(A, B)
-                    local ANumber = GetNumber(A.Name)
-                    local BNumber = GetNumber(B.Name)
-
-                    if ANumber and BNumber then
-                        return ANumber < BNumber
-                    elseif ANumber then
-                        return true
-                    elseif BNumber then
-                        return false
-                    end
-
-                    return A.Name < B.Name
-                end)
-
-                for _, Node in ipairs(RoomNodes) do
-                    table.insert(Nodes, Node)
-                end
-            end
-
-            local Exit = Room:FindFirstChild("RoomExit")
-            AddPart(Exit)
-        end
-    end
-
-    if #Nodes == 0 then
-        warn("Smiler: no movement points found")
-        return
-    end
-
-    local EntityModel = Entity.Model:Clone()
-
-    EntityModel.PrimaryPart =
-        EntityModel.PrimaryPart
-        or EntityModel:FindFirstChildWhichIsA("BasePart", true)
-
-    if not EntityModel.PrimaryPart then
-        warn("Smiler: cloned model has no PrimaryPart")
-        EntityModel:Destroy()
-        return
-    end
-
-    EntityModel.PrimaryPart.Anchored = true
-    EntityModel:SetAttribute("NoAI", false)
-
-    EntityConnections[EntityModel] = {}
-    local Data = EntityConnections[EntityModel]
-
-    local function GetTargetCFrame(Part)
-        return Part.CFrame
-            + Vector3.new(
-                0,
-                3.5 + (Entity.Config.HeightOffset or 0),
-                0
-            )
-    end
-
-    local SpawnIndex
-
-    if Entity.Config.BackwardsMovement then
-        SpawnIndex = #Nodes
-    else
-        SpawnIndex = 1
-    end
-
-    local SpawnNode = Nodes[SpawnIndex]
-
-    if not SpawnNode then
-        warn("Smiler: SpawnNode is nil")
-        EntityConnections[EntityModel] = nil
-        EntityModel:Destroy()
-        return
-    end
-
-    EntityModel:PivotTo(GetTargetCFrame(SpawnNode))
-    EntityModel.Parent = workspace
-
-    task.spawn(Entity.Debug.OnEntitySpawned)
-
-    local MainUI = LPlayer.PlayerGui:FindFirstChild("MainUI")
-    local Death = MainUI and MainUI:FindFirstChild("Death")
-    local DeathPanelDead = MainUI and MainUI:FindFirstChild("DeathPanelDead")
-
-    if CoreGui:FindFirstChild("JumpscareGui")
-        or (
-            Death
-            and Death:FindFirstChild("HelpfulDialogue")
-            and Death.HelpfulDialogue.Visible
-            and DeathPanelDead
-            and not DeathPanelDead.Visible
-        ) then
-
-        for _, Obj in ipairs(EntityModel:GetDescendants()) do
-            if Obj:IsA("Sound") and Obj.Playing then
-                Obj:Stop()
-            end
-        end
-    end
-
-    local FlickerConfig = Entity.Config.FlickerLights
-
-    if FlickerConfig and FlickerConfig[1] then
-        local RemotesFolder = ReplicatedStorage:FindFirstChild("RemotesFolder")
-        local Event = RemotesFolder and RemotesFolder:FindFirstChild("UseEventModule")
-
-        if Event then
-            pcall(function()
-                firesignal(
-                    Event.OnClientEvent,
-                    "flicker",
-                    ReplicatedStorage.GameData.LatestRoom.Value,
-                    FlickerConfig[2]
-                )
-            end)
-        end
-    end
-
-    task.wait(Entity.Config.DelayTime or 0)
-
-    local EnteredRooms = {}
-
-    Data.movementTick = RunService.Stepped:Connect(function()
-        if not EntityModel.Parent
-            or EntityModel:GetAttribute("NoAI")
-            or not EntityModel.PrimaryPart then
-            return
-        end
-
-        local HRP = GetPlayerRoot()
-        if not HRP then
-            return
-        end
-
-        local EntityPosition = EntityModel.PrimaryPart.Position
-        local PlayerPosition = HRP.Position
-
-        local Ignore = {
-            EntityModel,
-            Char
-        }
-
-        local FloorHit = workspace:FindPartOnRayWithIgnoreList(
-            Ray.new(
-                EntityPosition,
-                Vector3.new(0, -10, 0)
-            ),
-            Ignore
-        )
-
-        local PlayerRayHit = workspace:FindPartOnRayWithIgnoreList(
-            Ray.new(
-                EntityPosition,
-                PlayerPosition - EntityPosition
-            ),
-            Ignore
-        )
-
-        local CanSeePlayer = PlayerRayHit == nil
-
-        if FloorHit and FloorHit.Name == "Floor" then
-            for _, Room in ipairs(CurrentRooms:GetChildren()) do
-                if FloorHit:IsDescendantOf(Room)
-                    and not table.find(EnteredRooms, Room) then
-
-                    table.insert(EnteredRooms, Room)
-
-                    task.spawn(
-                        Entity.Debug.OnEntityEnteredRoom,
-                        Room
-                    )
-
-                    if Entity.Config.BreakLights then
-                        local RemotesFolder =
-                            ReplicatedStorage:FindFirstChild("RemotesFolder")
-
-                        local Event =
-                            RemotesFolder
-                            and RemotesFolder:FindFirstChild("UseEventModule")
-
-                        if Event then
-                            pcall(function()
-                                firesignal(
-                                    Event.OnClientEvent,
-                                    "shatter",
-                                    Room
-                                )
-                            end)
-                        end
-                    end
-
-                    break
-                end
-            end
-        end
-
-        local CamShake = Entity.Config.CamShake
-
-        if CamShake
-            and CamShake[1]
-            and EntityModel.PrimaryPart then
-
-            local Distance =
-                (PlayerPosition - EntityModel.PrimaryPart.Position).Magnitude
-
-            if Distance <= CamShake[3] then
-                local ShakeData = table.clone(CamShake[2])
-
-                ShakeData[1] =
-                    CamShake[2][1]
-                    / CamShake[3]
-                    * (CamShake[3] - Distance)
-
-                pcall(function()
-                    MainGame.camShaker:ShakeOnce(
-                        table.unpack(ShakeData)
-                    )
-                end)
-            end
-        end
-
-        if CanSeePlayer then
-            local Crucifix = Char and Char:FindFirstChild("Crucifix")
-
-            if Crucifix then
-                EntityModel:SetAttribute("NoAI", true)
-
-                local Handle = Crucifix:FindFirstChild("Handle")
-
-                if Handle then
-                    local CrucifixClone = Handle:Clone()
-
-                    Crucifix:Destroy()
-
-                    CrucifixClone.Parent = workspace
-                    CrucifixClone.Name = "cruxy"
-                    CrucifixClone.Anchored = true
-                    CrucifixClone.Color = Color3.fromRGB(255, 86, 86)
-                    CrucifixClone.Material = Enum.Material.Neon
-
-                    TweenService:Create(
-                        CrucifixClone,
-                        TweenInfo.new(5),
-                        {
-                            Transparency = 1
-                        }
-                    ):Play()
-
-                    CustomGitSound(
-                        "https://raw.githubusercontent.com/Voor-Pr00/Eye/refs/heads/main/DOORS-UNUSED-SOUNDTRACK-Stress%20(mp3cut.net).mp3",
-                        1,
-                        "crucifix"
-                    )
-
-                    pcall(function()
-                        MainGame.camShaker:ShakeOnce(
-                            200,
-                            5,
-                            0.1,
-                            0.15
-                        )
-                    end)
-
-                    local CrucifixModel =
-                        Functions.LoadCustomInstance(
-                            "https://raw.githubusercontent.com/VoorPhale012/Crucifix/refs/heads/main/pentagam.rbxm?raw=true"
-                        )
-
-                    if CrucifixModel then
-                        CrucifixModel.Parent = workspace
-
-                        local Smiler =
-                            workspace:FindFirstChild("Smiler")
-                            or EntityModel
-
-                        local SmilerNew =
-                            Smiler
-                            and Smiler:FindFirstChild(
-                                "SmilerNew",
-                                true
-                            )
-
-                        if CrucifixModel:IsA("Model")
-                            and SmilerNew then
-
-                            local CrucifixEntity =
-                                CrucifixModel:FindFirstChild(
-                                    "Entity",
-                                    true
-                                )
-
-                            if CrucifixEntity
-                                and CrucifixEntity:IsA("BasePart") then
-
-                                CrucifixModel:PivotTo(
-                                    SmilerNew.CFrame
-                                    - Vector3.new(
-                                        0,
-                                        Entity.Config.HeightOffset or 0,
-                                        0
-                                    )
-                                    - Vector3.new(0, 3, 0)
-                                )
-
-                                local SmilerClone =
-                                    Smiler:Clone()
-
-                                SmilerClone.Parent = workspace
-                                SmilerClone.Name = "SmilerClone"
-
-                                local CloneSmilerNew =
-                                    SmilerClone:FindFirstChild(
-                                        "SmilerNew",
-                                        true
-                                    )
-
-                                if CloneSmilerNew then
-                                    CrucifixEntity.CFrame =
-                                        CloneSmilerNew.CFrame
-                                end
-
-                                EntityModel:Destroy()
-
-                                if Smiler ~= EntityModel then
-                                    Smiler:Destroy()
-                                end
-
-                                local BeamColor =
-                                    ColorSequence.new({
-                                        ColorSequenceKeypoint.new(
-                                            0,
-                                            Color3.new(
-                                                0.4549,
-                                                0,
-                                                0
-                                            )
-                                        ),
-                                        ColorSequenceKeypoint.new(
-                                            1,
-                                            Color3.new(
-                                                0.4549,
-                                                0,
-                                                0
-                                            )
-                                        )
-                                    })
-
-                                for _, Obj in ipairs(
-                                    CrucifixModel:GetDescendants()
-                                ) do
-                                    if Obj:IsA("Beam") then
-                                        Obj.Color = BeamColor
-                                    end
-                                end
-
-                                local Circle =
-                                    CrucifixModel:FindFirstChild(
-                                        "Circle",
-                                        true
-                                    )
-
-                                if Circle then
-                                    local Lines =
-                                        Circle:FindFirstChild("Lines")
-
-                                    local Spark =
-                                        Circle:FindFirstChild("Spark")
-
-                                    if Lines
-                                        and Lines:IsA("Beam") then
-                                        Lines.Color = BeamColor
-                                    end
-
-                                    if Spark
-                                        and Spark:IsA("Beam") then
-                                        Spark.Color = BeamColor
-                                    end
-                                end
-
-                                local StartPosition =
-                                    CloneSmilerNew.Position
-                                    + Vector3.new(0, 3, 0)
-
-                                local EndPosition =
-                                    CloneSmilerNew.Position
-                                    - Vector3.new(0, 18, 0)
-
-                                TweenService:Create(
-                                    CloneSmilerNew,
-                                    TweenInfo.new(2),
-                                    {
-                                        Position = StartPosition
-                                    }
-                                ):Play()
-
-                                TweenService:Create(
-                                    CrucifixEntity,
-                                    TweenInfo.new(2),
-                                    {
-                                        Position = StartPosition
-                                    }
-                                ):Play()
-
-                                task.wait(2)
-
-                                for _, Obj in ipairs(
-                                    CloneSmilerNew:GetDescendants()
-                                ) do
-                                    if Obj:IsA("Sound") then
-                                        TweenService:Create(
-                                            Obj,
-                                            TweenInfo.new(3),
-                                            {
-                                                Volume = 0
-                                            }
-                                        ):Play()
-                                    end
-                                end
-
-                                TweenService:Create(
-                                    CloneSmilerNew,
-                                    TweenInfo.new(3),
-                                    {
-                                        Position = EndPosition
-                                    }
-                                ):Play()
-
-                                TweenService:Create(
-                                    CrucifixEntity,
-                                    TweenInfo.new(3),
-                                    {
-                                        Position = EndPosition
-                                    }
-                                ):Play()
-
-                                task.wait(4)
-
-                                if SmilerClone then
-                                    SmilerClone:Destroy()
-                                end
-
-                                if CrucifixClone then
-                                    CrucifixClone:Destroy()
-                                end
-
-                                if CrucifixModel then
-                                    CrucifixModel:Destroy()
-                                end
-
-                                pcall(function()
-                                    local AchievementGiver =
-                                        loadstring(
-                                            game:HttpGet(
-                                                "https://raw.githubusercontent.com/Voor-Pr00/Achivements/refs/heads/main/Voorpr0"
-                                            )
-                                        )()
-
-                                    AchievementGiver({
-                                        Title = "You put a smile on my face",
-                                        Desc = "You're annoying.",
-                                        Reason = "Used Crucifix on 'Smiler'",
-                                        Image = "rbxassetid://11417375410"
-                                    })
-                                end)
-                            end
-                        end
-                    end
-                end
-            end
-        end
-
-        if EntityModel.Parent
-            and EntityModel.PrimaryPart then
-
-            local _, OnScreen =
-                Camera:WorldToViewportPoint(
-                    EntityModel.PrimaryPart.Position
-                )
-
-            if OnScreen then
-                task.spawn(Entity.Debug.OnLookAtEntity)
-            end
-        end
-
-        if Entity.Config.CanKill
-            and not Char:GetAttribute("IsDead")
-            and not Char:GetAttribute("Invincible")
-            and not Char:GetAttribute("Hiding")
-            and EntityModel.Parent
-            and EntityModel.PrimaryPart then
-
-            local Distance =
-                (
-                    PlayerPosition
-                    - EntityModel.PrimaryPart.Position
-                ).Magnitude
-
-            if Distance <= Entity.Config.KillRange then
-                task.spawn(function()
-                    if Char:GetAttribute("IsDead") then
-                        return
-                    end
-
-                    Char:SetAttribute("IsDead", true)
-
-                    for _, Obj in ipairs(
-                        EntityModel:GetDescendants()
-                    ) do
-                        if Obj:IsA("Sound")
-                            and Obj.Playing then
-                            Obj:Stop()
-                        end
-                    end
-
-                    if Entity.Config.Jumpscare
-                        and Entity.Config.Jumpscare[1] then
-                        EntityModule.runJumpscare(
-                            Entity.Config.Jumpscare[2]
-                        )
-                    end
-
-                    task.spawn(Entity.Debug.OnDeath)
-
-                    if Hum then
-                        Hum.Health = 0
-                    end
-
-                    pcall(function()
-                        ReplicatedStorage.GameStats[
-                            "Player_" .. LPlayer.Name
-                        ].Total.DeathCause.Value =
-                            EntityModel.Name
-                    end)
-
-                    task.spawn(function()
-                        if not MainUI
-                            or not MainUI:FindFirstChild(
-                                "DeathPanelDead"
-                            ) then
-                            return
-                        end
-
-                        repeat
-                            task.wait()
-                        until MainUI.DeathPanelDead.Visible
-                            or not EntityModel.Parent
-
-                        if not EntityModel.Parent then
-                            return
-                        end
-
-                        for _, Obj in ipairs(
-                            EntityModel:GetDescendants()
-                        ) do
-                            if Obj:IsA("Sound") then
-                                local OldVolume = Obj.Volume
-
-                                Obj.Volume = 0
-                                Obj:Play()
-
-                                TweenService:Create(
-                                    Obj,
-                                    TweenInfo.new(2),
-                                    {
-                                        Volume = OldVolume
-                                    }
-                                ):Play()
-                            end
-                        end
-                    end)
-                end)
+    vu21.movementNode = vu3.Stepped:Connect(function(_, p22)
+        if pu18.Parent and not pu18:GetAttribute("NoAI") then
+            local v23 = pu18.PrimaryPart.Position
+            local v24 = Vector3.new(pu19.X, pu19.Y, pu19.Z) - v23
+            if v24.Magnitude <= 0.1 then
+                vu21.movementNode:Disconnect()
+            else
+                pu18:SetPrimaryPartCFrame(CFrame.new(v23 + v24.Unit * math.min(p22 * pu20, v24.Magnitude)))
             end
         end
     end)
-
-    task.spawn(Entity.Debug.OnEntityStartMoving)
-
-    local Cycles = Entity.Config.Cycles or {
-        Min = 1,
-        Max = 1,
-        WaitTime = 0
-    }
-
-    local CycleCount = math.max(
-        math.random(
-            Cycles.Min or 1,
-            Cycles.Max or 1
-        ),
-        1
-    )
-
-    local MovementNodes = {}
-
-    if Entity.Config.BackwardsMovement then
-        for i = #Nodes, 1, -1 do
-            table.insert(MovementNodes, Nodes[i])
-        end
-    else
-        for i = 1, #Nodes do
-            table.insert(MovementNodes, Nodes[i])
-        end
-    end
-
-    for Cycle = 1, CycleCount do
-        if not EntityModel.Parent
-            or EntityModel:GetAttribute("NoAI") then
+    repeat
+        task.wait()
+    until not vu21.movementNode.Connected
+end
+function loadSound(p25)
+    local v26 = Instance.new("Sound")
+    local v27 = tostring(p25[1])
+    local v28 = p25[2]
+    local v29 = next
+    local v30 = nil
+    while true do
+        local v31
+        v30, v31 = v29(v28, v30)
+        if v30 == nil then
             break
         end
+        if v30 ~= "SoundId" and v30 ~= "Parent" then
+            v26[v30] = v31
+        end
+    end
+    if v27:find("rbxasset://") then
+        v26.SoundId = v27
+    else
+        v26.SoundId = "rbxassetid://" .. v27:gsub("%D", "")
+    end
+    v26.Parent = workspace
+    return v26
+end
+function vu170.createEntity(p32)
+    local v33 = next
+    local v34 = vu14.DefaultConfig
+    local v35 = nil
+    while true do
+        local v36
+        v35, v36 = v33(v34, v35)
+        if v35 == nil then
+            break
+        end
+        if p32[v35] == nil then
+            p32[v35] = v36
+        end
+    end
+    p32.Speed = vu11 / 100 * p32.Speed
+    local v37 = LoadCustomInstance(p32.Model)
+    if typeof(v37) == "Instance" and v37.ClassName == "Model" then
+        v37.PrimaryPart = v37.PrimaryPart or v37:FindFirstChildWhichIsA("BasePart")
+        if v37.PrimaryPart then
+            v37.PrimaryPart.Anchored = true
+            if p32.CustomName then
+                v37.Name = p32.CustomName
+            end
+            v37:SetAttribute("IsCustomEntity", true)
+            v37:SetAttribute("NoAI", false)
+            return {
+                Model = v37,
+                Config = p32,
+                Debug = {
+                    OnEntitySpawned = function()
+                    end,
+                    OnEntityDespawned = function()
+                    end,
+                    OnEntityStartMoving = function()
+                    end,
+                    OnEntityFinishedRebound = function()
+                    end,
+                    OnEntityEnteredRoom = function()
+                    end,
+                    OnLookAtEntity = function()
+                    end,
+                    OnDeath = function()
+                    end
+                }
+            }
+        end
+    end
+end
+function vu170.runEntity(pu38)
+   
+local v42 = {}
 
-        for _, Node in ipairs(MovementNodes) do
-            if not EntityModel.Parent
-                or EntityModel:GetAttribute("NoAI") then
+for _, Room in ipairs(workspace.CurrentRooms:GetChildren()) do
+    local Entrance = Room:FindFirstChild("RoomEntrance")
+    local PathfindNodes = Room:FindFirstChild("PathfindNodes")
+    local Exit = Room:FindFirstChild("RoomExit")
+
+    if Entrance then
+        v42[#v42 + 1] = Entrance
+    end
+
+    if PathfindNodes then
+        local NumberNodes = {}
+
+        for _, Node in ipairs(PathfindNodes:GetChildren()) do
+            local Number = tonumber(Node.Name)
+
+            if Number then
+                NumberNodes[#NumberNodes + 1] = {
+                    Node = Node,
+                    Number = Number
+                }
+            end
+        end
+
+        table.sort(NumberNodes, function(A, B)
+            return A.Number < B.Number
+        end)
+
+        for _, Data in ipairs(NumberNodes) do
+            v42[#v42 + 1] = Data.Node
+        end
+    end
+
+    if Exit then
+        v42[#v42 + 1] = Exit
+    end
+end
+
+if #v42 == 0 then
+    warn("No movement nodes found")
+    return
+end
+    local vu51 = pu38.Model:Clone()
+    local v52 = pu38.Config.BackwardsMovement and (# v42 or 1) or 1
+    local v53 = pu38.Config.BackwardsMovement and - 50 or 50
+    vu166[vu51] = {}
+    local v54 = vu166[vu51]
+    vu51:SetPrimaryPartCFrame(v42[v52].CFrame * CFrame.new(0, 0, v53) + Vector3.new(0, 3.5 + pu38.Config.HeightOffset, 0))
+    vu51.Parent = workspace
+    task.spawn(pu38.Debug.OnEntitySpawned)
+    if vu5:FindFirstChild("JumpscareGui") or vu6.PlayerGui.MainUI.Death.HelpfulDialog.Visible and not vu6.PlayerGui.MainUI.DeathPanelDead.Visible then
+        warn("on death screen, mute entity")
+        local v55 = next
+        local v56, v57 = vu51:GetDescendants()
+        while true do
+            local v58
+            v57, v58 = v55(v56, v57)
+            if v57 == nil then
                 break
             end
-
-            if Node and Node:IsA("BasePart") then
-                DragEntity(
-                    EntityModel,
-                    GetTargetCFrame(Node).Position,
-                    Entity.Config.Speed
-                )
+            if v58.ClassName == "Sound" and v58.Playing then
+                v58:Stop()
             end
         end
-
-        if (Cycles.Max or 1) > 1 then
-            for i = #MovementNodes, 1, -1 do
-                if not EntityModel.Parent
-                    or EntityModel:GetAttribute("NoAI") then
-                    break
-                end
-
-                local Node = MovementNodes[i]
-
-                if Node and Node:IsA("BasePart") then
-                    DragEntity(
-                        EntityModel,
-                        GetTargetCFrame(Node).Position,
-                        Entity.Config.Speed
-                    )
+    end
+    if pu38.Config.FlickerLights[1] then
+        firesignal(game.ReplicatedStorage.RemotesFolder.UseEventModule.OnClientEvent, "flicker", vu2.GameData.LatestRoom.Value, pu38.Config.FlickerLights[2])
+    end
+    task.wait(pu38.Config.DelayTime)
+    local vu59 = {}
+    v54.movementTick = vu3.Stepped:Connect(function()
+        if vu51.Parent and not vu51:GetAttribute("NoAI") then
+            local v60 = vu51.PrimaryPart.Position
+            local v61 = getPlayerRoot().Position
+            local v62 = {
+                vu51,
+                vu7
+            }
+            local v63 = vu12(workspace, Ray.new(v60, Vector3.new(0, - 10, 0)), v62)
+            local v64 = {
+                vu51,
+                vu7
+            }
+            local v65 = vu12(workspace, Ray.new(v60, v61 - v60), v64) == nil
+            if v63 ~= nil and v63.Name == "Floor" then
+                local v66 = next
+                local v67, v68 = workspace.CurrentRooms:GetChildren()
+                while true do
+                    local v69
+                    v68, v69 = v66(v67, v68)
+                    if v68 == nil then
+                        break
+                    end
+                    if v63:IsDescendantOf(v69) and not table.find(vu59, v69) then
+                        vu59[# vu59 + 1] = v69
+                        task.spawn(pu38.Debug.OnEntityEnteredRoom, v69)
+                        if pu38.Config.BreakLights then
+                            firesignal(game.ReplicatedStorage.RemotesFolder.UseEventModule.OnClientEvent, "shatter", v69)
+                        end
+                        break
+                    end
                 end
             end
-        end
-
-        task.spawn(Entity.Debug.OnEntityFinishedRebound)
-
-        if Cycle < CycleCount then
-            task.wait(Cycles.WaitTime or 0)
-        end
-    end
-
-    if Data.movementTick then
-        Data.movementTick:Disconnect()
-        Data.movementTick = nil
-    end
-
-    if Data.movementNode then
-        Data.movementNode:Disconnect()
-        Data.movementNode = nil
-    end
-
-    EntityConnections[EntityModel] = nil
-
-    if EntityModel.Parent then
-        EntityModel:Destroy()
-    end
-
-    task.spawn(Entity.Debug.OnEntityDespawned)
+            local v70 = pu38.Config.CamShake
+            local v71 = (getPlayerRoot().Position - vu51.PrimaryPart.Position).Magnitude
+            if v70[1] and v71 <= v70[3] then
+                local v72 = next
+                local v73 = v70[2]
+                local v74 = nil
+                local v75 = {}
+                while true do
+                    local v76
+                    v74, v76 = v72(v73, v74)
+                    if v74 == nil then
+                        break
+                    end
+                    v75[v74] = v76
+                end
+                v75[1] = v70[2][1] / v70[3] * (v70[3] - v71)
+                vu15.MainGame.camShaker.ShakeOnce(vu15.MainGame.camShaker, table.unpack(v75))
+            end
+            if v65 then
+                if game.Players.LocalPlayer.Character:FindFirstChild("Crucifix") then
+                    local v77 = game:GetService("TweenService")
+                    vu51:SetAttribute("NoAI", true)
+                    local v78 = game.Players.LocalPlayer.Character.Crucifix.Handle:Clone()
+                    game.Players.LocalPlayer.Character.Crucifix:Destroy()
+                    v78.Parent = game.Workspace
+                    v78.Name = "cruxy"
+                    v78.Anchored = true
+                    v78.Color = Color3.fromRGB(255, 86, 86)
+                    v78.Material = Enum.Material.Neon
+                    v77:Create(v78, TweenInfo.new(5), {
+                        Transparency = 1
+                    }):Play()
+                   function GitAud(soundgit,filename)
+    SoundName=tostring(SoundName)
+    local url=soundgit
+    local FileName = filename
+    writefile(FileName..".mp3", game:HttpGet(url))
+    return (getcustomasset or getsynasset)(FileName..".mp3")
 end
 
---------------------------------------------------
---// Jumpscare
---------------------------------------------------
-
-function EntityModule.runJumpscare(Config)
-	if not Config then
-		return
-	end
-
-	local Image1
-
-	local Success1, Result1 = pcall(function()
-		return LoadCustomAsset(Config.Image1)
-	end)
-
-	if Success1 then
-		Image1 = Result1
-	end
-
-	local Image2
-
-	local Success2, Result2 = pcall(function()
-		return LoadCustomAsset(Config.Image2)
-	end)
-
-	if Success2 then
-		Image2 = Result2
-	end
-
-	local Sound1
-
-	if Config.Sound1 then
-		Sound1 = LoadSound(Config.Sound1)
-	end
-
-	local Sound2
-
-	if Config.Sound2 then
-		Sound2 = LoadSound(Config.Sound2)
-	end
-
-	local Gui = Instance.new("ScreenGui")
-	local Background = Instance.new("Frame")
-	local Face = Instance.new("ImageLabel")
-
-	Gui.Name = "JumpscareGui"
-	Gui.IgnoreGuiInset = true
-	Gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-
-	Background.Name = "Background"
-	Background.BackgroundColor3 = Color3.new(0, 0, 0)
-	Background.BorderSizePixel = 0
-	Background.Size = UDim2.fromScale(1, 1)
-	Background.ZIndex = 999
-
-	Face.Name = "Face"
-	Face.AnchorPoint = Vector2.new(0.5, 0.5)
-	Face.BackgroundTransparency = 1
-	Face.Position = UDim2.fromScale(0.5, 0.5)
-	Face.ResampleMode = Enum.ResamplerMode.Pixelated
-	Face.Size = UDim2.fromOffset(150, 150)
-
-	if Image1 then
-		Face.Image = Image1
-	end
-
-	Face.Parent = Background
-	Background.Parent = Gui
-	Gui.Parent = CoreGui
-
-	local Tease = Config.Tease or {
-		Min = 1,
-		Max = 1,
-		[1] = false
-	}
-
-	local ScreenHeight = Gui.AbsoluteSize.Y
-
-	if ScreenHeight <= 0 then
-		ScreenHeight = Camera.ViewportSize.Y
-	end
-
-	local SmallSize = ScreenHeight / 5
-	local LargeSize = ScreenHeight / 2.5
-
-	if Tease[1] and Sound1 then
-		local TeaseAmount = math.random(
-			Tease.Min or 1,
-			Tease.Max or 1
-		)
-
-		Sound1:Play()
-
-		for _ = 1, TeaseAmount do
-			task.wait(
-				math.random(100, 200) / 100
-			)
-
-			local Difference =
-				(LargeSize - SmallSize)
-				/ math.max(TeaseAmount, 1)
-
-			Face.Size = UDim2.fromOffset(
-				Face.AbsoluteSize.X + Difference,
-				Face.AbsoluteSize.Y + Difference
-			)
-		end
-
-		task.wait(
-			math.random(100, 200) / 100
-		)
-	end
-
-	--------------------------------------------------
-	--// Flashing
-	--------------------------------------------------
-
-	if Config.Flashing and Config.Flashing[1] then
-		task.spawn(function()
-			while Gui.Parent do
-				Background.BackgroundColor3 =
-					Config.Flashing[2]
-
-				task.wait(
-					math.random(25, 100) / 1000
-				)
-
-				if not Gui.Parent then
-					break
-				end
-
-				Background.BackgroundColor3 =
-					Color3.new(0, 0, 0)
-
-				task.wait(
-					math.random(25, 100) / 1000
-				)
-			end
-		end)
-	end
-
-	--------------------------------------------------
-	--// Shake
-	--------------------------------------------------
-
-	if Config.Shake then
-		task.spawn(function()
-			local OriginalPosition = Face.Position
-
-			while Gui.Parent do
-				Face.Position =
-					OriginalPosition
-					+ UDim2.fromOffset(
-						math.random(-10, 10),
-						math.random(-10, 10)
-					)
-
-				Face.Rotation =
-					math.random(-5, 5)
-
-				task.wait()
-			end
-		end)
-	end
-
-	if Image2 then
-		Face.Image = Image2
-	end
-
-	Face.Size = UDim2.fromOffset(
-		LargeSize,
-		LargeSize
-	)
-
-	if Sound2 then
-		Sound2:Play()
-	end
-
-	TweenService:Create(
-		Face,
-		TweenInfo.new(0.75),
-		{
-			Size = UDim2.fromOffset(
-				ScreenHeight * 3,
-				ScreenHeight * 3
-			),
-
-			ImageTransparency = 0.5
-		}
-	):Play()
-
-	task.wait(0.75)
-
-	if Gui then
-		Gui:Destroy()
-	end
-
-	if Sound1 then
-		Sound1:Destroy()
-	end
-
-	if Sound2 then
-		Sound2:Destroy()
-	end
+function CustomGitSound(soundlink, vol, filename)
+    local sound = Instance.new("Sound")
+    sound.SoundId = GitAud(soundlink, filename)
+    sound.Parent = workspace
+    sound.Volume = 2.6
+sound.Looped = false
+   sound:Play()
 end
 
---------------------------------------------------
---// ChaseInSession
---------------------------------------------------
+CustomGitSound("https://raw.githubusercontent.com/Voor-Pr00/Eye/refs/heads/main/DOORS-UNUSED-SOUNDTRACK-Stress%20(mp3cut.net).mp3", 1, "crucifix")
+                    local v79 = {
+    DefaultConfig = loadstring(game:HttpGet("https://raw.githubusercontent.com/lelele78/ProtectSecurity.18/refs/heads/main/DefautConfig"))(),                                               Functions = loadstring(game:HttpGet("https://raw.githubusercontent.com/RegularVynixu/Utilities/main/Functions.lua"))()
+                    }
+                    local v80 = game.Players.LocalPlayer.PlayerGui.MainUI.Initiator.Main_Game
+                    require(v80).camShaker:ShakeOnce(200, 5, 0.1, 0.15)
+                    local v81 = v79.Functions.LoadCustomInstance("https://raw.githubusercontent.com/VoorPhale012/Crucifix/refs/heads/main/pentagam.rbxm?raw=true")
+                    v81.Parent = game.Workspace
+                    local v82 = game.Workspace.Smiler
+                    if typeof(v81) == "Instance" and v81.ClassName == "Model" then
+                        v81:MoveTo(v82.SmilerNew.CFrame.Position - Vector3.new(0, pu38.Config.HeightOffset, 0) - Vector3.new(0, 3, 0))
+                        local v83 = game.Workspace.Smiler:Clone()
+                        v83.Parent = game.Workspace
+                        v83.Name = "SmilerClone"
+                        v81.Entity.CFrame = v83.SmilerNew.CFrame
+                        vu51:Destroy()
+                        v82:Destroy()
+                        Color3.fromRGB()
+                        local v84 = ColorSequence.new({
+                            ColorSequenceKeypoint.new(0, Color3.new(0.4549, 0, 0)),
+                            ColorSequenceKeypoint.new(1, Color3.new(0.4549, 0, 0))
+                        })
+                        if true == true then
+                            local v85 = next
+                            local v86, v87 = v81:GetDescendants()
+                            while true do
+                                local v88
+                                v87, v88 = v85(v86, v87)
+                                if v87 == nil then
+                                    break
+                                end
+                                if v88.ClassName == "Beam" then
+                                    v88.Color = v84
+                                end
+                            end
+                            v81.Circle.Lines.Color = v84
+                            v81.Circle.Spark.Color = v84
+                        end
+                        local v89 = {
+                            Position = v83.SmilerNew.CFrame.Position + Vector3.new(0, 3, 0)
+                        }
+                        local v90 = {
+                            Position = v83.SmilerNew.CFrame.Position - Vector3.new(0, 18, 0)
+                        }
+                        local v91 = v77:Create(v83.SmilerNew, TweenInfo.new(2), v89)
+                        local v92 = v77:Create(v81.Entity, TweenInfo.new(2), v89)
+                        v91:Play()
+                        v92:Play()
+                        wait(2)
+                        local v93 = next
+                        local v94, v95 = v83.SmilerNew:GetDescendants()
+                        while true do
+                            local v96
+                            v95, v96 = v93(v94, v95)
+                            if v95 == nil then
+                                break
+                            end
+                            if v96.ClassName == "Sound" then
+                                v77:Create(v96, TweenInfo.new(3), {
+                                    Volume = 0
+                                }):Play()
+                            end
+                        end
+                        local v97 = v77:Create(v83.SmilerNew, TweenInfo.new(3), v90)
+                        local v98 = v77:Create(v81.Entity, TweenInfo.new(3), v90)
+                        v97:Play()
+                        v98:Play()
+                        wait(4)
+                        v83:Destroy()
+                        v78:Destroy()
+                        v81:Destroy()
+                       local DoorsNotify = loadstring(game:HttpGet("https://raw.githubusercontent.com/Guestly-Alt/Scripts/refs/heads/main/AchievementHolder.lua"))()
 
-task.spawn(function()
-	while true do
-		local ChaseActive = false
-
-		for _, Obj in ipairs(workspace:GetChildren()) do
-			if Obj.Name == "RushMoving"
-				or Obj.Name == "AmbushMoving"
-				or Obj:GetAttribute("IsCustomEntity") then
-
-				ChaseActive = true
-				break
-			end
-		end
-
-		pcall(function()
-			ReplicatedStorage.GameData.ChaseInSession.Value =
-				ChaseActive
-		end)
-
-		task.wait(0.5)
-	end
-end)
-
---------------------------------------------------
---// Smiler
---------------------------------------------------
-
-local Smiler = EntityModule.createEntity({
-	CustomName = "Smiler",
-
-	--// Model ID loaded directly by game:GetObjects()
-	Model = "rbxassetid://17071491370",
-
-	Speed = 850,
-	DelayTime = 14,
-	HeightOffset = -2.5,
-
-	CanKill = true,
-	KillRange = 60,
-
-	BackwardsMovement = false,
-
-	BreakLights = true,
-
-	FlickerLights = {
-		true,
-		9.5
-	},
-
-	Cycles = {
-		Min = 11,
-		Max = 12,
-		WaitTime = 0
-	},
-
-	CamShake = {
-		true,
-		{
-			5,
-			15,
-			0.1,
-			1
-		},
-		100
-	},
-
-	Jumpscare = {
-		true,
-
-		{
-			Image1 = "rbxassetid://11417375410",
-			Image2 = "rbxassetid://11417375410",
-
-			Shake = true,
-
-			Sound1 = {
-				5263560566,
-				{
-					Volume = 2.1
-				}
-			},
-
-			Sound2 = {
-				5263560566,
-				{
-					Volume = 2.1
-				}
-			},
-
-			Flashing = {
-				true,
-				Color3.fromRGB(255, 0, 0)
-			},
-
-			Tease = {
-				Min = 1,
-				Max = 3,
-				false
-			}
-		}
-	},
-
-	CustomDialog = {
-		"I REMEMBER THAT SMILE ...",
-
-		"It seems like u got access to an entity that isn't released yet.",
-
-		"Please report to LSplash#1234 and Redibles#7070 if this happens again."
-	}
+DoorsNotify({
+    Style = "UNLOCKED ACHIEVEMENT",
+    Title = "You put a smile on my face",
+    Description = "You\'re annoying.",
+    Reason = "Used Crucifix on \'\'Smiler\'\'",
+    Image = "rbxassetid://11417375410",
+    Time = 5
 })
-
-if not Smiler then
-	warn("Smiler: failed to create entity")
-	return
+                       
+                    end
+                end
+                local _, v99 = vu13(vu10, vu51.PrimaryPart.Position)
+                if v99 then
+                    task.spawn(pu38.Debug.OnLookAtEntity)
+                end
+                if pu38.Config.CanKill and (not vu7:GetAttribute("IsDead") and (not vu7:GetAttribute("Invincible") and (not vu7:GetAttribute("Hiding") and (getPlayerRoot().Position - vu51.PrimaryPart.Position).Magnitude <= pu38.Config.KillRange))) then
+                    task.spawn(function()
+                        vu7:SetAttribute("IsDead", true)
+                        warn("mute entity")
+                        local v100 = next
+                        local v101, v102 = vu51:GetDescendants()
+                        while true do
+                            local v103
+                            v102, v103 = v100(v101, v102)
+                            if v102 == nil then
+                                break
+                            end
+                            if v103.ClassName == "Sound" and v103.Playing then
+                                v103:Stop()
+                            end
+                        end
+                        if pu38.Config.Jumpscare[1] then
+                            vu170.runJumpscare(pu38.Config.Jumpscare[2])
+                        end
+                        task.spawn(pu38.Debug.OnDeath)
+                        vu9.Health = 0
+                        vu2.GameStats["Player_" .. vu6.Name].Total.DeathCause.Value = vu51.Name
+                        if # pu38.Config.CustomDialog > 0 then
+                           
+                        end
+                        task.spawn(function()
+                            repeat
+                                task.wait()
+                            until vu6.PlayerGui.MainUI.DeathPanelDead.Visible
+                            warn("unmute entity:", vu51)
+                            local v104 = next
+                            local v105, v106 = vu51:GetDescendants()
+                            while true do
+                                local v107
+                                v106, v107 = v104(v105, v106)
+                                if v106 == nil then
+                                    break
+                                end
+                                if v107.ClassName == "Sound" then
+                                    local v108 = v107.Volume
+                                    v107.Volume = 0
+                                    v107:Play()
+                                    vu4:Create(v107, TweenInfo.new(2), {
+                                        Volume = v108
+                                    }):Play()
+                                end
+                            end
+                        end)
+                    end)
+                end
+            end
+        end
+    end)
+    task.spawn(pu38.Debug.OnEntityStartMoving)
+    local v109 = pu38.Config.Cycles
+    local v110
+    if pu38.Config.BackwardsMovement then
+        v110 = {}
+        for v111 = # v42, 1, - 1 do
+            v110[# v110 + 1] = v42[v111]
+        end
+    else
+        v110 = v42
+    end
+    for v112 = 1, math.max(math.random(v109.Min, v109.Max), 1) do
+        local _ = v112
+        for v113 = 1, # v110 do
+            dragEntity(vu51, v110[v113].Position + Vector3.new(0, 3.5 + pu38.Config.HeightOffset, 0), pu38.Config.Speed)
+        end
+        if v109.Max > 1 then
+            for v114 = # v110, 1, - 1 do
+                dragEntity(vu51, v110[v114].Position + Vector3.new(0, 3.5 + pu38.Config.HeightOffset, 0), pu38.Config.Speed)
+            end
+        end
+        task.spawn(pu38.Debug.OnEntityFinishedRebound)
+        if v112 < v109.Max then
+            task.wait(v109.WaitTime)
+        end
+    end
+    if not vu51:GetAttribute("NoAI") then
+        local v115 = next
+        local v116 = nil
+        while true do
+            local v117
+            v116, v117 = v115(v54, v116)
+            if v116 == nil then
+                break
+            end
+            v117:Disconnect()
+        end
+        vu51:Destroy()
+        task.spawn(pu38.Debug.OnEntityDespawned)
+    end
 end
-
-function Smiler.Debug.OnEntitySpawned()
+function vu170.runJumpscare(pu118)
+    local v119 = LoadCustomAsset(pu118.Image1)
+    local v120 = LoadCustomAsset(pu118.Image2)
+    local v121 = nil
+    local v122
+    if pu118.Sound1 then
+        v122 = loadSound(pu118.Sound1)
+    else
+        v122 = nil
+    end
+    if pu118.Sound2 then
+        v121 = loadSound(pu118.Sound2)
+    end
+    local vu123 = Instance.new("ScreenGui")
+    local vu124 = Instance.new("Frame")
+    local vu125 = Instance.new("ImageLabel")
+    vu123.Name = "JumpscareGui"
+    vu123.IgnoreGuiInset = true
+    vu123.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+    vu124.Name = "Background"
+    vu124.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+    vu124.BorderSizePixel = 0
+    vu124.Size = UDim2.new(1, 0, 1, 0)
+    vu124.ZIndex = 999
+    vu125.Name = "Face"
+    vu125.AnchorPoint = Vector2.new(0.5, 0.5)
+    vu125.BackgroundTransparency = 1
+    vu125.Position = UDim2.new(0.5, 0, 0.5, 0)
+    vu125.ResampleMode = Enum.ResamplerMode.Pixelated
+    vu125.Size = UDim2.new(0, 150, 0, 150)
+    vu125.Image = v119
+    vu125.Parent = vu124
+    vu124.Parent = vu123
+    vu123.Parent = vu5
+    local v126 = pu118.Tease
+    local v127 = vu123.AbsoluteSize.Y
+    local v128 = v127 / 5
+    local v129 = v127 / 2.5
+    if v126[1] then
+        local v130 = math.random(v126.Min, v126.Max)
+        v122:Play()
+        for _ = v126.Min, v130 do
+            task.wait(math.random(100, 200) / 100)
+            local v131 = (v129 - v128) / v130
+            vu125.Size = UDim2.new(0, vu125.AbsoluteSize.X + v131, 0, vu125.AbsoluteSize.Y + v131)
+        end
+        task.wait(math.random(100, 200) / 100)
+    end
+    if pu118.Flashing[1] then
+        task.spawn(function()
+            while vu123.Parent do
+                vu124.BackgroundColor3 = pu118.Flashing[2]
+                task.wait(math.random(25, 100) / 1000)
+                vu124.BackgroundColor3 = Color3.new(0, 0, 0)
+                task.wait(math.random(25, 100) / 1000)
+            end
+        end)
+    end
+    if pu118.Shake then
+        task.spawn(function()
+            local v132 = vu125.Position
+            while vu123.Parent do
+                vu125.Position = v132 + UDim2.new(0, math.random(- 10, 10), 0, math.random(- 10, 10))
+                vu125.Rotation = math.random(- 5, 5)
+                task.wait()
+            end
+        end)
+    end
+    vu125.Image = v120
+    vu125.Size = UDim2.new(0, v129, 0, v129)
+    v121:Play()
+    vu4:Create(vu125, TweenInfo.new(0.75), {
+        Size = UDim2.new(0, v127 * 3, 0, v127 * 3),
+        ImageTransparency = 0.5
+    }):Play()
+    task.wait(0.75)
+    vu123:Destroy()
+    if v122 then
+        v122:Destroy()
+    end
+    if v121 then
+        v121:Destroy()
+    end
 end
+task.spawn(function()
+    while true do
+        local v133 = next
+        local v134, v135 = workspace:GetChildren()
+        local v136 = false
+        while true do
+            local v137
+            v135, v137 = v133(v134, v135)
+            if v135 == nil then
+                break
+            end
+            if v137.Name == "RushMoving" or (v137.Name == "AmbushMoving" or v137:GetAttribute("IsCustomEntity")) then
+                v136 = true
+            end
+        end
+        vu2.GameData.ChaseInSession.Value = v136
+        task.wait(0.5)
+    end
 
-function Smiler.Debug.OnEntityDespawned()
+end)
+local vu138 = vu170.createEntity({
+    CustomName = "Smiler",
+    Model = "rbxassetid://17071491370",
+    Speed = 850,
+    DelayTime = 14,
+    HeightOffset = 0,
+    CanKill = false,
+    KillRange = 60,
+    BackwardsMovement = false,
+    BreakLights = true,
+    FlickerLights = {
+        true,
+        9.5
+    },
+    Cycles = {
+        Min = 11,
+        Max = 12,
+        WaitTime = 0
+    },
+    CamShake = {
+        true,
+        {
+            5,
+            15,
+            0.1,
+            1
+        },
+        100
+    },
+    Jumpscare = {
+        true,
+        { 
+            Image1 = "rbxassetid://11417375410",
+            Image2 = "rbxassetid://11417375410",
+            Shake = true,
+            Sound1 = {
+                5263560566,
+                {
+                    Volume = 2.1
+                }
+            },
+            Sound2 = {
+                5263560566,
+                {
+                    Volume = 2.1
+                }
+            },
+            Flashing = {
+                true,
+                Color3.fromRGB(255, 0, 0)
+            },
+            Tease = {
+                Min = 1,
+                Max = 3,
+                false
+            }
+        }
+    },
+    CustomDialog = {
+        "I REMEMBER THAT SMILE ...",
+        "It seems like u got access to an entity that isn\'t released yet.",
+        "Please report to LSplash#1234 and Redibles#7070 if this happens again."
+    }
+})
+function vu138.Debug.OnEntitySpawned()
+    print("Entity has spawned:", vu138)
 end
-
-function Smiler.Debug.OnEntityStartMoving()
+function vu138.Debug.OnEntityDespawned()
+    print("Entity has despawned:", vu138)
 end
-
-function Smiler.Debug.OnEntityFinishedRebound()
+function vu138.Debug.OnEntityStartMoving()
+    print("Entity has started smiling:", vu138)
 end
-
-function Smiler.Debug.OnEntityEnteredRoom(Room)
+function vu138.Debug.OnEntityFinishedRebound()
+    print("Entity has finished rebound:", vu138)
 end
-
-function Smiler.Debug.OnLookAtEntity()
+function vu138.Debug.OnEntityEnteredRoom(p139)
+    print("Entity:", vu138, "has entered room:", p139)
 end
-
-function Smiler.Debug.OnDeath()
+function vu138.Debug.OnLookAtEntity()
+    print("Player has looked at entity:", vu138)
 end
-
---------------------------------------------------
---// Run
---------------------------------------------------
-
-EntityModule.runEntity(Smiler)
+function vu138.Debug.OnDeath()
+    warn("smile more")
+end
+vu170.runEntity(vu138)
