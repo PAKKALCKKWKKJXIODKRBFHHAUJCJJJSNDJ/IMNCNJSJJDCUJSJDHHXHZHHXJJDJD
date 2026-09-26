@@ -1,0 +1,173 @@
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
+local Players = game:GetService("Players")
+
+local LPlayer = Players.LocalPlayer
+
+local LatestRoom = ReplicatedStorage
+    :WaitForChild("GameData")
+    :WaitForChild("LatestRoom")
+
+local File = "Eye.rbxm"
+
+local sound = Instance.new("Sound")
+sound.SoundId = "rbxassetid://" .. 127155960884656
+sound.Looped = false
+sound.Parent = workspace
+sound.PlaybackSpeed = 1
+sound.Volume = 0.2
+
+if not isfile(File) then
+    writefile(File, game:HttpGet(
+        "https://github.com/beanzjsjwj/doors-monsters-models/raw/refs/heads/main/Eye.rbxm"
+    ))
+end
+
+local Eye = game:GetObjects(getcustomasset(File))[1]
+Eye.Parent = workspace
+
+local Destroyed = false
+local RoomCount = 0
+
+local DamageLoop = false
+local DamageThread
+
+local RenderConnection
+local RoomConnection
+
+local function Cleanup()
+    if Destroyed then
+        return
+    end
+
+    Destroyed = true
+    DamageLoop = false
+
+    if DamageThread then
+        task.cancel(DamageThread)
+        DamageThread = nil
+    end
+
+    if RenderConnection then
+        RenderConnection:Disconnect()
+        RenderConnection = nil
+    end
+
+    if RoomConnection then
+        RoomConnection:Disconnect()
+        RoomConnection = nil
+    end
+
+    if Eye then
+        Eye:Destroy()
+        Eye = nil
+    end
+
+    if sound then
+        sound:Destroy()
+        sound = nil
+    end
+end
+
+--// Destroy sau 3 lần LatestRoom thay đổi
+RoomConnection = LatestRoom.Changed:Connect(function()
+    if Destroyed then
+        return
+    end
+
+    RoomCount += 1
+
+    if RoomCount >= 3 then
+        Cleanup()
+    end
+end)
+
+local Room = workspace.CurrentRooms:FindFirstChild(tostring(LatestRoom.Value))
+
+if Room then
+    local RoomExit = Room:FindFirstChild("RoomExit", true)
+    local Part = Eye:FindFirstChildWhichIsA("BasePart", true)
+
+    if Part then
+        Part.CanCollide = false
+    end
+
+    if RoomExit and Part then
+        Part.CFrame = RoomExit.CFrame + RoomExit.CFrame.LookVector * -1.5
+
+        local function StartDamage()
+            if DamageLoop or Destroyed then
+                return
+            end
+
+            DamageLoop = true
+
+            DamageThread = task.spawn(function()
+                while DamageLoop and not Destroyed do
+                    local Char = LPlayer.Character
+                    local Hum = Char and Char:FindFirstChildOfClass("Humanoid")
+
+                    if Hum then
+                        Hum:TakeDamage(0.075)
+
+                        local Stats = ReplicatedStorage.GameStats:FindFirstChild(
+                            "Player_" .. LPlayer.Name
+                        )
+
+                        if Stats then
+                            local Total = Stats:FindFirstChild("Total")
+
+                            if Total then
+                                local DeathCause = Total:FindFirstChild("DeathCause")
+
+                                if DeathCause then
+                                    DeathCause.Value = "Dimensional Eye"
+                                end
+                            end
+                        end
+
+                        local clone = sound:Clone()
+                        clone.Parent = workspace
+                        clone:Play()
+
+                        clone.Ended:Connect(function()
+                            clone:Destroy()
+                        end)
+                    end
+
+                    task.wait(0.003)
+                end
+            end)
+        end
+
+        local function StopDamage()
+            DamageLoop = false
+        end
+
+        RenderConnection = RunService.RenderStepped:Connect(function()
+            if Destroyed then
+                return
+            end
+
+            if not Part or not Part.Parent then
+                StopDamage()
+                return
+            end
+
+            local Camera = workspace.CurrentCamera
+
+            if not Camera then
+                StopDamage()
+                return
+            end
+
+            local _, OnScreen = Camera:WorldToViewportPoint(Part.Position)
+
+            if OnScreen then
+                StartDamage()
+            else
+                StopDamage()
+            end
+        end)
+    end
+end
