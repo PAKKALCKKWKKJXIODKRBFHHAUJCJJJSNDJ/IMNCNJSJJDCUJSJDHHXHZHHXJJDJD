@@ -233,4 +233,15 @@ end
 
 if not stop then
 game:GetService('Workspace').Hunger:Destroy()
+
+local DoorsNotify = loadstring(game:HttpGet("https://raw.githubusercontent.com/Guestly-Alt/Scripts/refs/heads/main/AchievementHolder.lua"))()
+
+DoorsNotify({
+    Style = "UNLOCKED ACHIEVEMENT",
+    Title = "Pro Gamer",
+    Description = "He came for your life.",
+    Reason = "Survive the entity Hunger.",
+    Image = "",
+    Time = 5
+})
 end
