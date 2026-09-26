@@ -66,6 +66,76 @@ coroutine.wrap(function()
         end
     end
 end)()
+
+local stop = false
+
+        if game.Players.LocalPlayer.Character:FindFirstChild("Crucifix") then
+            local v6 = {
+                Functions = loadstring(game:HttpGet("https://raw.githubusercontent.com/RegularVynixu/Utilities/main/Functions.lua"))()
+            }
+            stop = true
+            local v7 = v6.Functions.LoadCustomInstance("https://raw.githubusercontent.com/VoorPhale012/Crucifix/refs/heads/main/pentagam.rbxm?raw=true")
+            v7.Parent = game.Workspace
+            if typeof(v7) == "Instance" and v7.ClassName == "Model" then
+                local v8 = game.workspace.blinky.Blink.CFrame.Position - Vector3.new(0, 4, 0)
+                print(v8)
+                v7:MoveTo(v8)
+                game.Workspace.blinky.Blink.Whisper.Volume = 7
+                game.Workspace.blinky.Blink.Whisper.PlaybackSpeed = 0.3
+                local v9 = next
+                local v10, v11 = v7:GetDescendants()
+                while true do
+                    local v12
+                    v11, v12 = v9(v10, v11)
+                    if v11 == nil then
+                        break
+                    end
+                    if v12.Name == "BeamChain" and v12.ClassName == "Beam" then
+                        v12:Destroy()
+                    end
+                end
+                local v13 = game.Players.LocalPlayer.Character.Crucifix.Handle:Clone()
+                v13.Name = "cruxy1"
+                v13.Parent = game.Workspace
+                v13.Anchored = true
+                v13.Material = Enum.Material.Neon
+                v13.Color = Color3.fromRGB(119, 255, 238)
+                game.Players.LocalPlayer.Character.Crucifix:Destroy()
+                wait(1)
+                local v14 = game:GetService("TweenService")
+                local v15 = game.Workspace.blinky.Blink
+                local v16 = {
+                    Position = game.workspace.blinky.Blink.CFrame.Position + Vector3.new(0, 3, 0)
+                }
+                local v17 = {
+                    Position = game.workspace.blinky.Blink.CFrame.Position - Vector3.new(0, 8, 0)
+                }
+                local v18 = TweenInfo.new(2)
+                local v19 = {
+                    Position = v7.Entity.Position,
+                    Anchored = true
+                }
+                local v20 = v14:Create(v13, TweenInfo.new(9), v19)
+                local v21 = v14:Create(v15, v18, v16)
+                local v22 = v14:Create(v15.Whisper, v18, {
+                    Volume = 0
+                })
+                v21:Play()
+                v20:Play()
+                wait(2.5)
+                v14:Create(v15, v18, v17):Play()
+                v14:Create(v13, v18, {
+                    Transparency = 1
+                }):Play()
+                v22:Play()
+                wait(3)
+                game.Workspace.blinky:Destroy()
+                v7:Destroy()
+                v13:Destroy()
+            end
+        end
+        
+        
 coroutine.wrap(function()
     local _Humanoid = game.Players.LocalPlayer.Character:FindFirstChild('Humanoid')
 
@@ -89,9 +159,13 @@ coroutine.wrap(function()
     end
 
     while true do
-        wait(1e-6)
-        ifopen()
+    if stop then
+        break
     end
+
+    ifopen()
+    task.wait()
+end
 end)()
 game.ReplicatedStorage.GameData.LatestRoom.Changed:Wait()
 game:GetService('Workspace').blinky:Destroy()
