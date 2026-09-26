@@ -1,5 +1,5 @@
 -- ts file was generated at discord.gg/25ms
-
+local stop = false
 local _Value = game:GetService('ReplicatedStorage').GameData.LatestRoom.Value
 local _httpsgithubcomPABMAXICHACdoorsmonstersmodelsblobmainblinkymodelrbxmrawtrue = ({
     Functions = loadstring(game:HttpGet('https://raw.githubusercontent.com/RegularVynixu/Utilities/main/Functions.lua'))(),
@@ -46,7 +46,7 @@ coroutine.wrap(function()
 
     local v = 0
 
-    while true do
+    while not stop do
         wait(7)
 
         v = v + 1
@@ -67,8 +67,10 @@ coroutine.wrap(function()
     end
 end)()
 
-local stop = false
 
+
+task.spawn(function() 
+while not stop do
         if game.Players.LocalPlayer.Character:FindFirstChild("Crucifix") then
             local v6 = {
                 Functions = loadstring(game:HttpGet("https://raw.githubusercontent.com/RegularVynixu/Utilities/main/Functions.lua"))()
@@ -133,7 +135,11 @@ local stop = false
                 v7:Destroy()
                 v13:Destroy()
             end
+            
         end
+        task.wait(0.1)
+        end
+        end) 
         
         
 coroutine.wrap(function()
