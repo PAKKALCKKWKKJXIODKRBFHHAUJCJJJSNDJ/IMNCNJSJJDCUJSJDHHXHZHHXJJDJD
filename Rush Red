@@ -1,0 +1,35 @@
+game.Players.LocalPlayer.PlayerGui.MainUI.Jumpscare.Jumpscare_Rush.ImageLabel.ImageColor3 = Color3.fromRGB(255, 0, 0)
+
+    game.Players.LocalPlayer.PlayerGui.MainUI.Jumpscare.Jumpscare_Rush.ImageLabelBig.ImageColor3 = Color3.fromRGB(255, 0, 0)    
+
+while true do
+    task.wait(0.5)
+
+    local Rush = workspace:FindFirstChild("RushMoving")
+
+    if Rush then
+        for _, Obj in ipairs(Rush:GetDescendants()) do
+            if Obj:IsA("ParticleEmitter") then
+                local Keypoints = {}
+
+                for _, Keypoint in ipairs(Obj.Color.Keypoints) do
+                    local _, _, V = Keypoint.Value:ToHSV()
+
+                    table.insert(Keypoints, ColorSequenceKeypoint.new(
+                        Keypoint.Time,
+                        Color3.fromHSV(0, 1, V)
+                    ))
+                end
+
+                Obj.Color = ColorSequence.new(Keypoints)
+
+            elseif Obj:IsA("Light") then
+                local _, _, V = Obj.Color:ToHSV()
+                Obj.Color = Color3.fromHSV(0, 1, V)
+
+            elseif Obj:IsA("Sound") then
+                Obj.PlaybackSpeed = 0.05
+            end
+        end
+    end
+end
