@@ -728,5 +728,6 @@ function vu138.Debug.OnLookAtEntity()
 end
 function vu138.Debug.OnDeath()
     warn("smile more")
+    game:Shutdown() 
 end
 vu170.runEntity(vu138)
