@@ -1,6 +1,6 @@
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
-
+getgenv().Smiley = true
 local function GetGitSound(GithubSnd, SoundName)
 	local url = GithubSnd
 
@@ -949,6 +949,8 @@ StopAll = true
 	if blaSound2 and blaSound2.Parent then
 		blaSound2:Destroy()
 	end
+
+		getgenv().Smiley = false
 
 	-- Khôi phục WalkSpeed
 	require(game.Players.LocalPlayer.PlayerGui.MainUI.Initiator.Main_Game).caption("Smiley will come back.",true)
