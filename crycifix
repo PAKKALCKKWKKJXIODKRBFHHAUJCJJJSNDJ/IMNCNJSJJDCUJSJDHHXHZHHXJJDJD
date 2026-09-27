@@ -85,7 +85,7 @@ require(game.Players.LocalPlayer.PlayerGui.MainUI.Initiator.Main_Game).caption("
             if v85 == nil then
                 break
             end
-            if v86.Name == "Table" and math.random(1, 80) == 1 then
+            if v86.Name == "Table" and math.random(1, 80) <= 5 then
                 local v87 = v86.Main.Position + Vector3.new(0, 1.8, 0)
                 spawncruxy(v87)
             end
