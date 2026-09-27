@@ -1,6 +1,6 @@
 -- CRUCIFIX NORMAL SPAWN
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-
+local bed
 local GameSeed = ReplicatedStorage
 	:WaitForChild("GameData")
 	:WaitForChild("GameSeed")
@@ -64,7 +64,7 @@ coroutine.wrap(function()
             v67.Parent = vu64
             v67.Enabled = true
             v67.Color = Color3.fromRGB(0, 255, 255)
-            v67.Range = 10
+         
             local v68 = Instance.new("ProximityPrompt")
             v68.Name = "prompty"
             v68.MaxActivationDistance = 5
@@ -119,15 +119,19 @@ require(game.Players.LocalPlayer.PlayerGui.MainUI.Initiator.Main_Game).caption("
         end
         local v82 = game:GetService("ReplicatedStorage").GameData.LatestRoom.Value
         local v83 = next
-        local v84, v85 = game.Workspace.CurrentRooms[v82].Assets:GetDescendants()
+        local v84, v85 = game.Workspace.CurrentRooms[v82]:GetDescendants()
         while true do
             local v86
             v85, v86 = v83(v84, v85)
             if v85 == nil then
                 break
             end
-            if v86.Name == "Table" and SyncRandomInt(1, 80) <= 5 then
+            if (v86.Name == "Table" or v86.Name == "Dresser") and SyncRandomInt(1, 80) <= 5 then
                 local v87 = v86.Main.Position + Vector3.new(0, 1.8, 0)
+                spawncruxy(v87)
+                elseif v86.Name == "Regal_Chair" and SyncRandomInt(1, 80) <= 5 then
+                local v87 = v86.Base.Position + Vector3.new(0, 2, 0)
+                v86.SeatPart.SeatPrompt.Enabled = false
                 spawncruxy(v87)
             end
         end
