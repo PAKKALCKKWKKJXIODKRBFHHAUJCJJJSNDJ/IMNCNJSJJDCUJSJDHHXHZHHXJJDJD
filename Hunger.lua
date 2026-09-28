@@ -232,7 +232,7 @@ end
 
 
 if not stop then
-game:GetService('Workspace').Hunger:Destroy()
+_httpsgithubcomPABMAXICHACdoorsmonstersmodelsblobmainhungerrbxmrawtrue:Destroy()
 
 local DoorsNotify = loadstring(game:HttpGet("https://raw.githubusercontent.com/Guestly-Alt/Scripts/refs/heads/main/AchievementHolder.lua"))()
 
