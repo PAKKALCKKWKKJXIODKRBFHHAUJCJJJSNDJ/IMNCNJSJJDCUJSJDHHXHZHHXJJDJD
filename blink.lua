@@ -27,21 +27,21 @@ if typeof(_httpsgithubcomPABMAXICHACdoorsmonstersmodelsblobmainblinkymodelrbxmra
 end
 
 wait(0.1)
-game:GetService('Workspace').blinky.Blink.Spawn:Play()
+_httpsgithubcomPABMAXICHACdoorsmonstersmodelsblobmainblinkymodelrbxmrawtrue.Blink.Spawn:Play()
 coroutine.wrap(function()
     openEye = function()
-        game:GetService('Workspace').blinky.Blink.OpenParticle.Enabled = true
-        game:GetService('Workspace').blinky.Blink.ClosedParticle.Enabled = false
+        _httpsgithubcomPABMAXICHACdoorsmonstersmodelsblobmainblinkymodelrbxmrawtrue.Blink.OpenParticle.Enabled = true
+        _httpsgithubcomPABMAXICHACdoorsmonstersmodelsblobmainblinkymodelrbxmrawtrue.Blink.ClosedParticle.Enabled = false
 
-        game:GetService('Workspace').blinky.Blink.Blink:Play()
-        game:GetService('Workspace').blinky.Blink.BlinkForeshadow:Play()
+        _httpsgithubcomPABMAXICHACdoorsmonstersmodelsblobmainblinkymodelrbxmrawtrue.Blink.Blink:Play()
+        _httpsgithubcomPABMAXICHACdoorsmonstersmodelsblobmainblinkymodelrbxmrawtrue.Blink.BlinkForeshadow:Play()
     end
     closeEye = function()
-        game:GetService('Workspace').blinky.Blink.OpenParticle.Enabled = false
-        game:GetService('Workspace').blinky.Blink.ClosedParticle.Enabled = true
+        _httpsgithubcomPABMAXICHACdoorsmonstersmodelsblobmainblinkymodelrbxmrawtrue.Blink.OpenParticle.Enabled = false
+        _httpsgithubcomPABMAXICHACdoorsmonstersmodelsblobmainblinkymodelrbxmrawtrue.Blink.ClosedParticle.Enabled = true
 
-        game:GetService('Workspace').blinky.Blink.Blink:Play()
-        game:GetService('Workspace').blinky.Blink.BlinkForeshadow:Play()
+        _httpsgithubcomPABMAXICHACdoorsmonstersmodelsblobmainblinkymodelrbxmrawtrue.Blink.Blink:Play()
+        _httpsgithubcomPABMAXICHACdoorsmonstersmodelsblobmainblinkymodelrbxmrawtrue.Blink.BlinkForeshadow:Play()
     end
 
     local v = 0
@@ -52,8 +52,8 @@ coroutine.wrap(function()
         v = v + 1
 
         if v == 1 then
-            if game:GetService('Workspace').blinky.Blink.OpenParticle.Enabled ~= false then
-                if game:GetService('Workspace').blinky.Blink.OpenParticle.Enabled == true then
+            if _httpsgithubcomPABMAXICHACdoorsmonstersmodelsblobmainblinkymodelrbxmrawtrue.Blink.OpenParticle.Enabled ~= false then
+                if _httpsgithubcomPABMAXICHACdoorsmonstersmodelsblobmainblinkymodelrbxmrawtrue.Blink.OpenParticle.Enabled == true then
                     closeEye()
 
                     v = 0
@@ -137,7 +137,7 @@ while not stop do
             end
             
         end
-        task.wait(0.1)
+        task.wait(0.01)
         end
         end) 
         
@@ -146,7 +146,7 @@ coroutine.wrap(function()
     local _Humanoid = game.Players.LocalPlayer.Character:FindFirstChild('Humanoid')
 
     ifopen = function()
-        if game:GetService('Workspace').blinky.Blink.OpenParticle.Enabled == true and _Humanoid.MoveDirection.Magnitude > 0 then
+        if _httpsgithubcomPABMAXICHACdoorsmonstersmodelsblobmainblinkymodelrbxmrawtrue.Blink.OpenParticle.Enabled == true and _Humanoid.MoveDirection.Magnitude > 0 then
             game.Players.LocalPlayer.Character.Humanoid.Health = game.Players.LocalPlayer.Character.Humanoid.Health - 10
 
             local _LocalPlayer2 = game:GetService('Players').LocalPlayer
@@ -157,7 +157,7 @@ coroutine.wrap(function()
                 wait()
                 print(' ')
             else
-                game:GetService('Workspace').blinky.Blink.Kill:Play()
+                _httpsgithubcomPABMAXICHACdoorsmonstersmodelsblobmainblinkymodelrbxmrawtrue.Blink.Kill:Play()
             end
 
             wait(1)
@@ -174,4 +174,4 @@ coroutine.wrap(function()
 end
 end)()
 game.ReplicatedStorage.GameData.LatestRoom.Changed:Wait()
-game:GetService('Workspace').blinky:Destroy()
+_httpsgithubcomPABMAXICHACdoorsmonstersmodelsblobmainblinkymodelrbxmrawtrue:Destroy()
