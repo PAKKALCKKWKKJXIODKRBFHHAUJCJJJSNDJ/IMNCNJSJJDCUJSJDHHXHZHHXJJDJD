@@ -1,0 +1,199 @@
+game:GetService("TextChatService").TextChannels.RBXGeneral:DisplaySystemMessage("<font color='#00ff00'>[Guestly's Impossible Mode (Plus Edition)]: Script succesfully executed.</font>")
+game:GetService("TextChatService").TextChannels.RBXGeneral:DisplaySystemMessage("<font color='#ffffff'>Good Luck.</font>")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local GameSeed = ReplicatedStorage
+	:WaitForChild("GameData")
+	:WaitForChild("GameSeed")
+
+local Seed = tonumber(GameSeed.Value) or 0
+
+--// SYNC RANDOM
+local SyncState = Seed % 2147483647
+
+if SyncState <= 0 then
+	SyncState += 2147483646
+end
+
+local function SyncRandom()
+	SyncState = (SyncState * 16807) % 2147483647
+	return (SyncState - 1) / 2147483646
+end
+
+local function SyncRandomInt(Min, Max)
+	Min = math.floor(Min)
+	Max = math.floor(Max)
+
+	if Min > Max then
+		Min, Max = Max, Min
+	end
+
+	return math.floor(
+		SyncRandom() * (Max - Min + 1)
+	) + Min
+end
+
+local function SyncRandomNumber(Min, Max)
+	return Min + SyncRandom() * (Max - Min)
+end
+
+local function SyncWait(Min, Max)
+	task.wait(SyncRandomNumber(Min, Max))
+end
+
+local caption = game.Players.LocalPlayer:WaitForChild("PlayerGui").MainUI.MainFrame.Caption
+caption.TextColor3 = Color3.fromRGB(189, 97, 255)
+require(game.Players.LocalPlayer.PlayerGui.MainUI.Initiator.Main_Game).caption("Guestly's Impossible mode Plus+ Edition script successfully loaded. V1",true)
+
+game.ReplicatedStorage.GameData.LatestRoom.Changed:Wait()
+
+require(game.Players.LocalPlayer.PlayerGui.MainUI.Initiator.Main_Game).caption("Script sync'd according to the room.",true)
+
+-- CommonSense
+task.spawn(function() 
+loadstring(game:HttpGet("https://raw.githubusercontent.com/PAKKALCKKWKKJXIODKRBFHHAUJCJJJSNDJ/IMNCNJSJJDCUJSJDHHXHZHHXJJDJD/refs/heads/main/Commonsese.lua"))() 
+end) 
+
+-- rush red
+task.spawn(function() 
+loadstring(game:HttpGet("https://raw.githubusercontent.com/PAKKALCKKWKKJXIODKRBFHHAUJCJJJSNDJ/IMNCNJSJJDCUJSJDHHXHZHHXJJDJD/refs/heads/main/Rush%20Red"))() 
+end) 
+
+-- crucifix
+task.spawn(function() 
+loadstring(game:HttpGet("https://raw.githubusercontent.com/PAKKALCKKWKKJXIODKRBFHHAUJCJJJSNDJ/IMNCNJSJJDCUJSJDHHXHZHHXJJDJD/refs/heads/main/crycifix"))() 
+end) 
+
+-- Smiler
+coroutine.wrap(function()
+    while true do
+        SyncWait(100, 160)
+        game.ReplicatedStorage.GameData.LatestRoom.Changed:Wait()
+        local roll = SyncRandomInt(1, 100)
+
+if roll <= 60 and not getgenv().Smiley then
+	loadstring(game:HttpGet("https://raw.githubusercontent.com/PAKKALCKKWKKJXIODKRBFHHAUJCJJJSNDJ/IMNCNJSJJDCUJSJDHHXHZHHXJJDJD/refs/heads/main/smilerspawner.lua"))()
+else
+-- fuck
+end
+    end
+end)()
+
+-- WH1T3 
+coroutine.wrap(function()
+    while true do
+        SyncWait(110, 150)
+        game.ReplicatedStorage.GameData.LatestRoom.Changed:Wait()
+        local roll = SyncRandomInt(1, 100)
+
+if roll <= 50 and not getgenv().Smiley then
+	loadstring(game:HttpGet("https://raw.githubusercontent.com/PAKKALCKKWKKJXIODKRBFHHAUJCJJJSNDJ/IMNCNJSJJDCUJSJDHHXHZHHXJJDJD/refs/heads/main/WH1T3.lua"))()
+else
+-- fuck
+end
+    end
+end)()
+
+-- Hunger
+coroutine.wrap(function()
+    while true do
+        SyncWait(75, 90)
+        game.ReplicatedStorage.GameData.LatestRoom.Changed:Wait()
+        local roll = SyncRandomInt(1, 100)
+
+if roll <= 40 and not getgenv().Smiley then
+	loadstring(game:HttpGet("https://raw.githubusercontent.com/PAKKALCKKWKKJXIODKRBFHHAUJCJJJSNDJ/IMNCNJSJJDCUJSJDHHXHZHHXJJDJD/refs/heads/main/Hunger.lua"))()
+else
+-- fuck
+end
+    end
+end)()
+
+-- Silence
+coroutine.wrap(function()
+    while true do
+        SyncWait(100, 120)
+        game.ReplicatedStorage.GameData.LatestRoom.Changed:Wait()
+        local roll = SyncRandomInt(1, 100)
+
+if roll <= 40 and not getgenv().Smiley then
+	loadstring(game:HttpGet("https://raw.githubusercontent.com/PAKKALCKKWKKJXIODKRBFHHAUJCJJJSNDJ/IMNCNJSJJDCUJSJDHHXHZHHXJJDJD/refs/heads/main/Silence.lua"))()
+else
+-- fuck
+end
+    end
+end)()
+
+-- A-150
+coroutine.wrap(function()
+    while true do
+        task.wait(10)
+        game.ReplicatedStorage.GameData.LatestRoom.Changed:Wait()
+        local roll = SyncRandomInt(1, 100)
+
+if roll <= 2 and not getgenv().Smiley then
+	loadstring(game:HttpGet("https://raw.githubusercontent.com/PAKKALCKKWKKJXIODKRBFHHAUJCJJJSNDJ/IMNCNJSJJDCUJSJDHHXHZHHXJJDJD/refs/heads/main/fully%20a-150"))()
+else
+-- fuck
+end
+    end
+end)()
+
+-- Blink
+coroutine.wrap(function()
+    while true do
+        SyncWait(20, 40)
+        game.ReplicatedStorage.GameData.LatestRoom.Changed:Wait()
+        local roll = SyncRandomInt(1, 100)
+
+if roll <= 40 and not getgenv().Smiley then
+	loadstring(game:HttpGet("https://raw.githubusercontent.com/PAKKALCKKWKKJXIODKRBFHHAUJCJJJSNDJ/IMNCNJSJJDCUJSJDHHXHZHHXJJDJD/refs/heads/main/blink.lua"))()
+else
+-- fuck
+end
+    end
+end)()
+
+-- Dimensional Eye
+coroutine.wrap(function()
+    while true do
+        SyncWait(70, 90)
+        game.ReplicatedStorage.GameData.LatestRoom.Changed:Wait()
+        local roll = SyncRandomInt(1, 100)
+
+if roll <= 25 and not getgenv().Smiley then
+	loadstring(game:HttpGet("https://raw.githubusercontent.com/PAKKALCKKWKKJXIODKRBFHHAUJCJJJSNDJ/IMNCNJSJJDCUJSJDHHXHZHHXJJDJD/refs/heads/main/dimensional%20eye"))()
+else
+-- fuck
+end
+    end
+end)()
+
+-- Fake eyes
+coroutine.wrap(function()
+    while true do
+        SyncWait(40, 60)
+        game.ReplicatedStorage.GameData.LatestRoom.Changed:Wait()
+        local roll = SyncRandomInt(1, 100)
+
+if roll <= 30 and not getgenv().Smiley then
+	loadstring(game:HttpGet("https://raw.githubusercontent.com/PAKKALCKKWKKJXIODKRBFHHAUJCJJJSNDJ/IMNCNJSJJDCUJSJDHHXHZHHXJJDJD/refs/heads/main/eyes.lua"))()
+else
+-- fuck
+end
+    end
+end)()
+
+-- Smiley
+coroutine.wrap(function()
+    while true do
+        task.wait(70)
+        local roll = SyncRandomInt(1, 100)
+
+if roll <= 5 and not getgenv().Smiley then
+	loadstring(game:HttpGet("https://raw.githubusercontent.com/PAKKALCKKWKKJXIODKRBFHHAUJCJJJSNDJ/IMNCNJSJJDCUJSJDHHXHZHHXJJDJD/refs/heads/main/Smiley.lua"))()
+else
+-- fuck
+end
+    end
+end)()
