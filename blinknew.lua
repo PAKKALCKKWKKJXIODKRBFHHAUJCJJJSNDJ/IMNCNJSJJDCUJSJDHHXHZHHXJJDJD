@@ -251,7 +251,7 @@ task.spawn(function()
 				)
 
 				task.spawn(function()
-					task.wait(7)
+					task.wait(4)
 
 					if TweenWhisper and Blink.Whisper then
 						TweenWhisper:Play()
