@@ -126,10 +126,10 @@ require(game.Players.LocalPlayer.PlayerGui.MainUI.Initiator.Main_Game).caption("
             if v85 == nil then
                 break
             end
-            if (v86.Name == "Table" or v86.Name == "Dresser") and SyncRandomInt(1, 80) <= 5 then
+            if (v86.Name == "Table" or v86.Name == "Dresser") and SyncRandomInt(1, 80) <= 2 then
                 local v87 = v86.Main.Position + Vector3.new(0, 1.8, 0)
                 spawncruxy(v87)
-                elseif v86.Name == "Regal_Chair" and SyncRandomInt(1, 80) <= 5 then
+                elseif v86.Name == "Regal_Chair" and SyncRandomInt(1, 80) <= 2 then
                 local v87 = v86.Base.Position + Vector3.new(0, 2, 0)
                 v86.SeatPart.SeatPrompt.Enabled = false
                 spawncruxy(v87)
